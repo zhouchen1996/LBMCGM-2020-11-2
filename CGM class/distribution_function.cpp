@@ -25,7 +25,12 @@ namespace distribution_function_base_space {
 namespace distribution_function_space {
 
 	//D2Q9
+
 	distribution_function_D2Q9::distribution_function_D2Q9(int x_, int y_)
-		:distribution_function_base(x_, y_, 1, 9), x(x_), y(y_) {}
+		:distribution_function_base(x_, y_, 1, 9) {}
+
+	double& distribution_function_D2Q9::operator()(int i, int j,int q) {
+		return this->operator()(i, j, 1, q);
+	}
 
 }
