@@ -28,5 +28,14 @@ int main() {
 	
 	cout<< ux * uy << endl;
 	cout << 6 * 3 + 5 * 1 + 9 * 4 << endl;
+
+	distribution_function_space::vector<double, 3> u3(ux);
+	cout << u3(1) << " " << u3(2) << " " << u3(3) << endl;
+
+	u3 = uy + ux;
+	cout << ux(1) << " " << ux(2) << " " << ux(3) << endl;
+	cout << uy(1) << " " << uy(2) << " " << uy(3) << endl;
+	cout << u3(1) << " " << u3(2) << " " << u3(3) << endl;
+
 	return 0;
 }

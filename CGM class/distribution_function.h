@@ -26,17 +26,49 @@ namespace distribution_function_space {
 	template <typename T, int N>
 	class vector {
 	public:
-		vector() = default;
+
+		vector() 
+			:v(new T[N])
+		{
+			for (int i = 0; i < N; i++) {
+				v[i] = 0;
+			}
+		}
+
+		vector(const vector<T, N>& a) : v(new T[N]) {
+			for (int i = 0; i < N; i++)
+				this->v[i] = a.v[i];
+		}
+
+		~vector() {
+			delete[] v;
+		}
 
 		template <typename T, int N>
-		friend T operator*(vector<T, N>& a, vector<T, N>& b);
+		friend T operator*(vector<T, N>& a,vector<T, N>& b);
+
+		template <typename T, int N>
+		friend vector<T, N> operator+(vector<T, N>& a, vector<T, N>& b);
 
 		T& operator()(int i) {
 			//start from 1
 			return v[i - 1];
 		}
+
+		vector<T,N>& operator=(const vector<T, N>& a) {
+			for (int i = 0; i < N; i++)
+				this->v[i] = a.v[i];
+			return *this;
+		}
+
+		vector<T, N>& operator+=(vector<T, N>& a) {
+			for (int i = 1; i <= N; i++)
+				this->operator()(i) += a(i);
+			return *this;
+		}
+
 	private:
-		T v[N];
+		T *v;
 	};
 
 	//overload multiplication related to template class vector
@@ -48,7 +80,15 @@ namespace distribution_function_space {
 		return temp;
 	}
 
-	//D2Q9 distribution_function
+	template <typename T, int N>
+	vector<T, N> operator+(vector<T, N>& a, vector<T, N>& b) {
+		vector<T, N> temp_vector;
+		for (int i = 1; i <= N; i++)
+			temp_vector(i) = a(i) + b(i);
+		return temp_vector;
+	}
+
+	//D2Q9 distribution_functions
 	class distribution_function_D2Q9 :public distribution_function_base_space::distribution_function_base {
 	public:
 
@@ -63,12 +103,15 @@ namespace distribution_function_space {
 		double& operator()(int i, int j,int q);
 		//void streaming();
 	private:
-		double w[9];
+		vector<double,9> w;
 		vector<double, 2> c[9];
-		vector<double, 2> velocity;
 	};
 
-	
+	class velocity {
+	public:
+		
+	};
+
 }
 
 #endif // !_DISTRIBUTION_FUNCTION_H_
