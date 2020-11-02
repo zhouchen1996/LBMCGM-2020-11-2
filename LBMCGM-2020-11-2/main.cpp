@@ -1173,6 +1173,7 @@ int main() {
 			}
 		}
 
+
 		//if (step % interval == 0) {
 		//	out_file("Phi" + to_string(step / interval) + ".vtk", "Phi", "velocity", u, v, Phi);
 		//}
