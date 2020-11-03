@@ -45,10 +45,10 @@ namespace distribution_function_space {
 		}
 
 		template <typename T, int N>
-		friend T operator*(vector<T, N>& a,vector<T, N>& b);
+		friend T operator*(const vector<T, N>& a,const vector<T, N>& b);
 
 		template <typename T, int N>
-		friend vector<T, N> operator+(vector<T, N>& a, vector<T, N>& b);
+		friend vector<T, N> operator+(const vector<T, N>& a, const vector<T, N>& b);
 
 		T& operator()(int i) {
 			//start from 1
@@ -73,18 +73,18 @@ namespace distribution_function_space {
 
 	//overload multiplication related to template class vector
 	template <typename T, int N>
-	T operator*(vector<T, N>& a, vector<T, N>& b) {
+	T operator*(const vector<T, N>& a, const vector<T, N>& b) {
 		T temp(0);
 		for (int i = 1; i <= N; i++)
-			temp += (a(i) * b(i));
+			temp += (a.v[i] * b.v[i]);
 		return temp;
 	}
 
 	template <typename T, int N>
-	vector<T, N> operator+(vector<T, N>& a, vector<T, N>& b) {
+	vector<T, N> operator+(const vector<T, N>& a,const vector<T, N>& b) {
 		vector<T, N> temp_vector;
 		for (int i = 1; i <= N; i++)
-			temp_vector(i) = a(i) + b(i);
+			temp_vector.v[i] = a.v[i] + b.v[i];
 		return temp_vector;
 	}
 

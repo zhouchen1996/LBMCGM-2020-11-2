@@ -36,6 +36,8 @@ int main() {
 	cout << ux(1) << " " << ux(2) << " " << ux(3) << endl;
 	cout << uy(1) << " " << uy(2) << " " << uy(3) << endl;
 	cout << u3(1) << " " << u3(2) << " " << u3(3) << endl;
-
+	cout << ux * uy + u3 * uy + 3 << endl;
+	double aaa = (ux + uy) * u3;
+	cout << aaa << endl;
 	return 0;
 }
