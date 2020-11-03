@@ -39,11 +39,9 @@ namespace distribution_function_space {
 		return this->operator()(i, j, 1, q);
 	}
 
-	
-	void distribution_function_D2Q9::shift(int q) {
-		
-		return;
-	}
+	/*distribution_function_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2) {
+		distribution_function_D2Q9 temp(x,y);
+	}*/
 
 	void distribution_function_D2Q9::streaming() {
 
@@ -51,13 +49,29 @@ namespace distribution_function_space {
 			switch (q)
 			{
 			case 1:
+				for (int i = x; i >= 2; i--) for (int j = 1; j <= y; j++) 
+					this->operator()(i, j, q) = this ->operator()(i - 1, j, q);break;
 			case 2:
+				for (int i = 1; i <= x; i++) for (int j = y; j >= 2; j--)
+					this->operator()(i, j, q) = this ->operator()(i , j - 1, q); break;
 			case 3:
+				for (int i = 1; i <= x - 1; i++) for (int j = 1; j <= y; j++)
+					this->operator()(i, j, q) = this ->operator()(i + 1, j, q); break;
 			case 4:
+				for (int i = 1; i <= x; i++) for (int j = 1; j <= y - 1; j++)
+					this->operator()(i, j, q) = this ->operator()(i , j + 1, q); break;
 			case 5:
+				for (int i = x; i >= 2; i--) for (int j = y; j >= 2; j--)
+					this->operator()(i, j, q) = this ->operator()(i - 1, j - 1, q); break;
 			case 6:
+				for (int i = 1; i <= x - 1; i++) for (int j = y; j >= 2; j--)
+					this->operator()(i, j, q) = this ->operator()(i + 1, j - 1, q); break;
 			case 7:
+				for (int i = 1; i <= x - 1; i++) for (int j = 1; j <= y - 1; j++)
+					this->operator()(i, j, q) = this ->operator()(i + 1, j + 1, q); break;
 			case 8:
+				for (int i = x; i >= 2; i--) for (int j = 1; j <= y - 1; j++)
+					this->operator()(i, j, q) = this ->operator()(i - 1, j + 1, q); break;
 			default:
 				break;
 			}

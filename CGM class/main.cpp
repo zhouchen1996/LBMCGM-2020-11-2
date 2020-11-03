@@ -1,13 +1,14 @@
 #include <iostream>
+#include <cstdio>
 #include "distribution_function.h"
 
 using namespace std;
 int main() {
-	distribution_function_space::distribution_function_D2Q9 f(3, 3);
+	distribution_function_space::distribution_function_D2Q9 f(6, 6);
 	int temp = 0;
-	for (int i = 1; i <= 3; i++) {
-		for (int j = 1; j <= 3; j++) {
-			for (int q = 0; q < 9; q++) {
+	for (int q = 0; q < 9; q++) {
+		for (int i = 1; i <= 6; i++) {
+			for (int j = 1; j <= 6; j++) {
 				temp++;
 				f(i, j, q) = temp;
 			}
@@ -63,7 +64,31 @@ int main() {
 	v2d(1, 1) += v2d(2, 2);
 	cout << v2d(1, 1)(0) << " " << v2d(1, 1)(1) << endl;
 	
+	cout << endl;
+	for (int i = 1; i <= 6; i++) {
+		for (int j = 1; j <= 6; j++) {
+			//for (int q = 0; q < 9; q++) {
+				cout << f(i, j, 8) << " ";
+			//}
+		}
+		cout << endl;
+	}
 
+	f.streaming();
+	cout << "\nstream()iscalled\n\n";
+	
+	for (int i = 1; i <= 6; i++) {
+		for (int j = 1; j <= 6; j++) {
+			//for (int q = 0; q < 9; q++) {
+			cout << f(i, j, 8) << " ";
+			//}
+		}
+		cout << endl;
+	}
+
+	cout << 6 * 6 * 9 << endl;
+
+	system("pause");
 
 	return 0;
 }

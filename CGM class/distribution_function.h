@@ -12,7 +12,7 @@ namespace distribution_function_base_space {
 
 		double& operator()(int i, int j, int k, int q);
 
-	private:
+	protected:
 		int x;
 		int y;
 		int z;
@@ -148,19 +148,18 @@ namespace distribution_function_space {
 	public:
 
 		using distribution_function_base::operator();
-
+		
 		distribution_function_D2Q9() = default;
 		distribution_function_D2Q9(int x_, int y_);
 
 		double& operator()(int i, int j,int q);
-		
+		//friend distribution_function_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2);
 	private:
 
 		distribution_function_base_space::vector<double, 9> w;
 		distribution_function_base_space::vector<double, 2> c[9];
 
 	public:
-		void shift(int q);
 		void streaming();
 
 	};
