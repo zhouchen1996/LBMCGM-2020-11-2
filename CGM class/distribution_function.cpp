@@ -27,10 +27,21 @@ namespace distribution_function_space {
 	//D2Q9
 
 	distribution_function_D2Q9::distribution_function_D2Q9(int x_, int y_)
-		:distribution_function_base(x_, y_, 1, 9) {}
+		:distribution_function_base(x_, y_, 1, 9),
+	w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 })
+	{
+		c[0] = { 0,0 }; 
+		c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
+		c[5] = { 1,1 }; c[6] = { -1,1 }; c[7] = { -1,-1 }; c[8] = { 1,-1 };
+	}
 
 	double& distribution_function_D2Q9::operator()(int i, int j,int q) {
 		return this->operator()(i, j, 1, q);
 	}
 
+	velocity_field_2D::velocity_field_2D(int x_, int y_) :velocity_field<2>(x_,y_,1){}
+
+	distribution_function_base_space::vector<double, 2>& velocity_field_2D::operator()(int i, int j) {
+		return this->operator()(i, j, 1);
+	}
 }
