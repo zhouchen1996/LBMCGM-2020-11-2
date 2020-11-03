@@ -62,8 +62,8 @@ namespace distribution_function_space {
 		}
 
 		vector<T, N>& operator+=(vector<T, N>& a) {
-			for (int i = 1; i <= N; i++)
-				this->operator()(i) += a(i);
+			for (int i = 0; i < N; i++)
+				this->v[i] += a.v[i];
 			return *this;
 		}
 
@@ -75,7 +75,7 @@ namespace distribution_function_space {
 	template <typename T, int N>
 	T operator*(const vector<T, N>& a, const vector<T, N>& b) {
 		T temp(0);
-		for (int i = 1; i <= N; i++)
+		for (int i = 0; i < N; i++)
 			temp += (a.v[i] * b.v[i]);
 		return temp;
 	}
@@ -83,7 +83,7 @@ namespace distribution_function_space {
 	template <typename T, int N>
 	vector<T, N> operator+(const vector<T, N>& a,const vector<T, N>& b) {
 		vector<T, N> temp_vector;
-		for (int i = 1; i <= N; i++)
+		for (int i = 0; i < N; i++)
 			temp_vector.v[i] = a.v[i] + b.v[i];
 		return temp_vector;
 	}
