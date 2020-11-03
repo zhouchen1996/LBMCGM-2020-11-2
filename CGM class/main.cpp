@@ -22,22 +22,26 @@ int main() {
 	}
 
 	distribution_function_space::vector<double, 3> ux, uy;
-	ux(1) = 6; uy(1) = 3;
-	ux(2) = 5; uy(2) = 1;
-	ux(3) = 9; uy(3) = 4;
+	ux(0) = 6; uy(0) = 3;
+	ux(1) = 5; uy(1) = 1;
+	ux(2) = 9; uy(2) = 4;
 	
 	cout<< ux * uy << endl;
 	cout << 6 * 3 + 5 * 1 + 9 * 4 << endl;
 
 	distribution_function_space::vector<double, 3> u3(ux);
-	cout << u3(1) << " " << u3(2) << " " << u3(3) << endl;
+	cout << u3(0) << " " << u3(1) << " " << u3(2) << endl;
 
 	u3 = uy + ux;
-	cout << ux(1) << " " << ux(2) << " " << ux(3) << endl;
-	cout << uy(1) << " " << uy(2) << " " << uy(3) << endl;
-	cout << u3(1) << " " << u3(2) << " " << u3(3) << endl;
+	cout << ux(0) << " " << ux(1) << " " << ux(2) << endl;
+	cout << uy(0) << " " << uy(1) << " " << uy(2) << endl;
+	cout << u3(0) << " " << u3(1) << " " << u3(2) << endl;
 	cout << ux * uy + u3 * uy + 3 << endl;
 	double aaa = (ux + uy) * u3;
 	cout << aaa << endl;
+
+	distribution_function_space::vector<double, 9> u4({55});
+	cout << u4(0) << " " << u4(2) << " " << u4(6) << endl;
+
 	return 0;
 }

@@ -40,6 +40,11 @@ namespace distribution_function_space {
 				this->v[i] = a.v[i];
 		}
 
+		vector(const T (&a)[N]) : v(new T[N]) {
+			for (int i = 0; i < N; i++)
+				this->v[i] = a[i];
+		}
+
 		~vector() {
 			delete[] v;
 		}
@@ -51,8 +56,8 @@ namespace distribution_function_space {
 		friend vector<T, N> operator+(const vector<T, N>& a, const vector<T, N>& b);
 
 		T& operator()(int i) {
-			//start from 1
-			return v[i - 1];
+			//start from 0
+			return v[i];
 		}
 
 		vector<T,N>& operator=(const vector<T, N>& a) {
@@ -103,7 +108,7 @@ namespace distribution_function_space {
 		double& operator()(int i, int j,int q);
 		//void streaming();
 	private:
-		vector<double,9> w;
+		vector<double, 9> w;
 		vector<double, 2> c[9];
 	};
 
