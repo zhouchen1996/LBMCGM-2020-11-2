@@ -226,6 +226,24 @@ namespace distribution_function_template_space {
 			c[0] = { 0,0 };
 			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
 			c[5] = { 1,1 }; c[6] = { -1,1 }; c[7] = { -1,-1 }; c[8] = { 1,-1 };
+
+			for (int r = 0; r < X * Y * 9; r++) {
+				*(distribution_function_template_p + r) = 0;
+			}
+		}
+
+		distribution_function_template_D2Q9(double rho_initial)
+			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
+			distribution_function_template_p(new double[X * Y * 9])
+		{
+			c[0] = { 0,0 };
+			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
+			c[5] = { 1,1 }; c[6] = { -1,1 }; c[7] = { -1,-1 }; c[8] = { 1,-1 };
+			
+			for (int q = 0; q <= 8; q++)
+				for (int i = 1; i <= X; i++)
+					for (int j = 1; j <= Y; j++)
+						(*this)(i, j, q) = w(q) * rho_initial;
 		}
 
 		~distribution_function_template_D2Q9() {
@@ -238,7 +256,9 @@ namespace distribution_function_template_space {
 			return *(distribution_function_template_p + index);
 		}
 
-		//friend distribution_function_template_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2);
+		//friend distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2);
+
+		void blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
 
 	private:
 
@@ -289,7 +309,19 @@ namespace distribution_function_template_space {
 		return;
 	}
 
-}
+	//template <int X,int Y>
+	//distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+	//}
 
+	template <int X,int Y>
+	void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+		for (int q = 0; q <= 8; q++)
+			for (int i = 1; i <= X; i++)
+				for (int j = 1; j <= Y; j++)
+					(*this)(i, j, q) = f1(i, j, q) + f2(i, j, q);
+		return;
+	}
+
+}
 
 #endif // !_DISTRIBUTION_FUNCTION_H_

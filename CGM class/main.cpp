@@ -124,6 +124,38 @@ int main() {
 			}
 		}
 
+		cout << "\n\n";
+
+		distribution_function_template_space::distribution_function_template_D2Q9<6, 6> fff2(1);
+		for (int i = 1; i <= 6; i++) {
+			cout << endl;
+			for (int j = 1; j <= 6; j++) {
+				cout << fff2(i, j, 1) << " ";
+			}
+		}
+
+		cout << "\n\n";
+
+		distribution_function_template_space::distribution_function_template_D2Q9<6, 6> fff3(2);
+		for (int i = 1; i <= 6; i++) {
+			cout << endl;
+			for (int j = 1; j <= 6; j++) {
+				cout << fff3(i, j, 1) << " ";
+			}
+		}
+
+		cout << "\n\nblend() is called\n\n";
+
+		distribution_function_template_space::distribution_function_template_D2Q9<6, 6> fff4;
+		fff4.blend(fff2, fff3);
+
+		for (int i = 1; i <= 6; i++) {
+			cout << endl;
+			for (int j = 1; j <= 6; j++) {
+				cout << fff4(i, j, 1) << " ";
+			}
+		}
+
 	//system("pause");
 
 	return 0;
