@@ -88,7 +88,43 @@ int main() {
 
 	cout << 6 * 6 * 9 << endl;
 
-	system("pause");
+	distribution_function_template_base_space::distribution_function_base_template<2, 2, 2, 9> ff;
+
+	distribution_function_template_space::distribution_function_template_D2Q9<6, 6> fff;
+
+	//fff(1, 1, 0) = 10;
+	//cout<<fff(1, 1, 0)<<endl;
+
+	int ttt = 100;
+	//for (int q = 0; q <= 8; q++) {
+		for (int i = 1; i <= 6; i++) {
+			for (int j = 1; j <= 6; j++) {
+				ttt++;
+				fff(i, j, 8) = ttt;
+			}
+		}
+	//}
+		cout << "\n";
+	//for (int q = 0; q <= 8; q++) {
+		for (int i = 1; i <= 6; i++) {
+			cout << endl;
+			for (int j = 1; j <= 6; j++) {
+				cout << fff(i, j, 8) << " ";
+			}
+		}
+	//}
+
+		cout << "\n\nstreaming() is called\n\n";
+		fff.streaming();
+
+		for (int i = 1; i <= 6; i++) {
+			cout << endl;
+			for (int j = 1; j <= 6; j++) {
+				cout << fff(i, j, 8) << " ";
+			}
+		}
+
+	//system("pause");
 
 	return 0;
 }
