@@ -2,6 +2,8 @@
 #define _DISTRIBUTION_FUNCTION_H_
 namespace distribution_function_base_space {
 
+	//distribution_function_base
+
 	class distribution_function_base {
 	public:
 		distribution_function_base() = default;
@@ -17,8 +19,11 @@ namespace distribution_function_base_space {
 		int Q;
 		double* distribution_function_base_p;
 	};
+}
 
-	//define a vector for convenience
+namespace distribution_function_base_space {
+
+	//vector template--------------------------------------
 	template <typename T, int N>
 	class vector {
 	public:
@@ -78,7 +83,7 @@ namespace distribution_function_base_space {
 		T* v;
 	};
 
-	//overload multiplication related to template class vector
+	// * for vecotr template
 	template <typename T, int N>
 	T operator*(const vector<T, N>& a, const vector<T, N>& b) {
 		T temp(0);
@@ -87,6 +92,7 @@ namespace distribution_function_base_space {
 		return temp;
 	}
 
+	// + for vector template 
 	template <typename T, int N>
 	vector<T, N> operator+(const vector<T, N>& a, const vector<T, N>& b) {
 		vector<T, N> temp_vector;
@@ -95,7 +101,7 @@ namespace distribution_function_base_space {
 		return temp_vector;
 	}
 
-	//velocity_field
+	//velocity_field template------------------------------
 	template <int N>
 	class velocity_field {
 	public:
@@ -136,9 +142,8 @@ namespace distribution_function_base_space {
 
 namespace distribution_function_space {
 
-	
+	//D2Q9 distribution_functions--------------------------
 
-	//D2Q9 distribution_functions
 	class distribution_function_D2Q9 :public distribution_function_base_space::distribution_function_base {
 	public:
 
@@ -148,15 +153,20 @@ namespace distribution_function_space {
 		distribution_function_D2Q9(int x_, int y_);
 
 		double& operator()(int i, int j,int q);
-		//void streaming();
+		
 	private:
+
 		distribution_function_base_space::vector<double, 9> w;
 		distribution_function_base_space::vector<double, 2> c[9];
+
 	public:
-		 
+		void shift(int q);
+		void streaming();
+
 	};
 
-	//velocity_field_2D
+	//velocity_field_2D------------------------------------
+
 	class velocity_field_2D: distribution_function_base_space::velocity_field<2>{
 	public:
 
