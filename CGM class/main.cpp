@@ -155,6 +155,18 @@ int main() {
 				cout << fff4(i, j, 1) << " ";
 			}
 		}
+		printf("\n\n");
+		distribution_function_template_space::velocity2D_template_space::velocity2D_template<5, 5> velocity2D_1;
+		distribution_function_template_space::velocity2D_template_space::velocity2D_template<5, 5> velocity2D_2(1,4);
+		distribution_function_template_space::velocity2D_template_space::velocity2D_template<5, 5> velocity2D_3(3,2);
+		cout << velocity2D_3(5, 5)(1) << endl;
+
+		for (int i = 1; i <= 5; i++) {
+			cout << endl;
+			for (int j = 1; j <= 5; j++) {
+				cout << velocity2D_3(i, j) * velocity2D_2(i,j) << " ";
+			}
+		}
 
 	//system("pause");
 

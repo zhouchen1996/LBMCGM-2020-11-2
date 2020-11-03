@@ -39,9 +39,7 @@ namespace distribution_function_space {
 		return this->operator()(i, j, 1, q);
 	}
 
-	/*distribution_function_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2) {
-		distribution_function_D2Q9 temp(x,y);
-	}*/
+	/*distribution_function_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2) {}*/
 
 	void distribution_function_D2Q9::streaming() {
 

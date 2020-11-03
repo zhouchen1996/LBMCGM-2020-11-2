@@ -21,8 +21,9 @@ namespace distribution_function_base_space {
 	};
 }
 
+//==1==
 namespace distribution_function_base_space {
-
+	//important!!!!!!!!
 	//vector template--------------------------------------
 	template <typename T, int N>
 	class vector {
@@ -100,6 +101,10 @@ namespace distribution_function_base_space {
 			temp_vector.v[i] = a.v[i] + b.v[i];
 		return temp_vector;
 	}
+
+}
+
+namespace distribution_function_base_space{
 
 	//velocity_field template------------------------------
 	template <int N>
@@ -182,6 +187,7 @@ namespace distribution_function_space {
 
 }
 
+//==2==
 namespace distribution_function_template_base_space {
 
 	//distribution_function_base_template
@@ -211,6 +217,7 @@ namespace distribution_function_template_base_space {
 
 }
 
+//==3==
 namespace distribution_function_template_space {
 
 	//D2Q9 distribution_functions_template--------------------------
@@ -219,20 +226,7 @@ namespace distribution_function_template_space {
 	class distribution_function_template_D2Q9  {
 	public:
 
-		distribution_function_template_D2Q9()
-			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
-			distribution_function_template_p (new double [X*Y*9])
-		{
-			c[0] = { 0,0 };
-			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
-			c[5] = { 1,1 }; c[6] = { -1,1 }; c[7] = { -1,-1 }; c[8] = { 1,-1 };
-
-			for (int r = 0; r < X * Y * 9; r++) {
-				*(distribution_function_template_p + r) = 0;
-			}
-		}
-
-		distribution_function_template_D2Q9(double rho_initial)
+		distribution_function_template_D2Q9(double rho_initial = 0)
 			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
 			distribution_function_template_p(new double[X * Y * 9])
 		{
@@ -257,10 +251,10 @@ namespace distribution_function_template_space {
 		}
 
 		//friend distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2);
-
+		
 		void blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
-
-	private:
+		
+	protected:
 
 		distribution_function_base_space::vector<double, 9> w;
 		distribution_function_base_space::vector<double, 2> c[9];
@@ -320,6 +314,40 @@ namespace distribution_function_template_space {
 				for (int j = 1; j <= Y; j++)
 					(*this)(i, j, q) = f1(i, j, q) + f2(i, j, q);
 		return;
+	}
+
+}
+
+//==4==
+namespace distribution_function_template_space {
+
+	namespace velocity2D_template_space {
+
+		template <int X,int Y>
+		class velocity2D_template {
+		public:
+
+			velocity2D_template(double initial_velocity_x = 0,double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_base_space::vector<double, 2>[X * Y]) {
+				for (int r = 0; r < X * Y; r++)
+					*(velocity2D_template_p + r) = { initial_velocity_x,initial_velocity_y };
+			}
+
+			~velocity2D_template() {
+				delete[]velocity2D_template_p;
+			}
+			
+			distribution_function_base_space::vector<double, 2>& operator()(int i, int j) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				int index = (i - 1) * Y + (j - 1);
+				return *(velocity2D_template_p + index);
+			}
+
+		protected:
+
+			distribution_function_base_space::vector<double,2>* velocity2D_template_p;
+
+		};
+
 	}
 
 }
