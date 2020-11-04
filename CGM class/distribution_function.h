@@ -1,6 +1,8 @@
 #ifndef _DISTRIBUTION_FUNCTION_H_
 #define _DISTRIBUTION_FUNCTION_H_
-
+#include <iostream>
+#include <cmath>
+#include <cstdio>
 //vector template
 namespace distribution_function_template_space {
 	//important!!!!!!!!
@@ -197,6 +199,9 @@ namespace distribution_function_template_space {
 		//distribution_function_template_D2Q9.equilibrium(velocity2D_template,scalar_field);
 		distribution_function_template_D2Q9<X,Y>& equilibrium(velocity2D_template_space::velocity2D_template<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
 
+		//Detect if the value of the distribution function is abnormal.
+		bool detect();
+
 	protected:
 
 		distribution_function_template_space::vector<double, 9> w;
@@ -271,6 +276,34 @@ namespace distribution_function_template_space {
 			}
 		}
 		return *this;
+	}
+
+	template <int X, int Y>
+	bool distribution_function_template_D2Q9<X, Y>::detect() {
+		double min = 0, max = 0;
+		int position[4]{ 1,1,1,1 };
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j < Y; j++) {
+				for (int q = 0; q <= 8; q++) {
+					if (isfinite((*this)(i, j, q)) != 0) {
+						if ((*this)(i, j, q) >= 0) {
+							min = this->operator()(i, j, q) < min ? (position[0] = i, position[1] = j, this->operator()(i, j, q)) : min;
+							max = this->operator()(i, j, q) > max ? (position[2] = i, position[3] = j, this->operator()(i, j, q)) : max;
+						}
+						else {
+							printf("\nThe value of distribution function (%d,%d,%d) is %.6f < 0.It doesn't satisfy the requirement that it must be positive.\n", i, j, q, (*this)(i, j, q));
+							return false;
+						}
+					}
+					else{ 
+						printf("\nThe value of distribution function (%d,%d,%d) is infinite.\n", i, j, q);
+						return false;
+					}
+				}
+			}
+		}
+		printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
+		return true;
 	}
 
 }
