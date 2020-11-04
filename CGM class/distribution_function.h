@@ -431,6 +431,30 @@ namespace distribution_function_template_space {
 		};
 
 	}
+
+}
+
+//define a class associated with a area type that represents different areas
+namespace distribution_function_template_space {
+
+	enum class areatype{S,SB,SL,F,FB,FL,left,right,upper,bottom,obstacle,red,blue,interface,contactline,
+	interfaceNotContactline};
+
+	template<typename T,int X, int Y>
+	class area_field {
+	public:
+		area_field(T area_initial_type) :area_field_p(new T[X * Y]) {
+			for (int r = 0; r < X * Y; r++) {
+				*area_field_p = area_initial_type;
+			}
+		}
+		~area_field() {
+			delete[]area_field_p;
+		}
+	protected:
+		T* area_field_p;
+	};
+
 }
 
 //distribution_function_template_D2Q9
