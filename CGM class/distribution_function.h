@@ -260,10 +260,9 @@ namespace distribution_function_template_space {
 	class distribution_function_template_D2Q9  {
 	public:
 
-		distribution_function_template_D2Q9(double rho_initial = 0, distribution_function_base_space::vector<double, 2> velocity_initial = distribution_function_base_space::vector<double, 2>({0,0}))
+		distribution_function_template_D2Q9(double rho_initial = 0)
 			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
-			distribution_function_template_p(new double[X * Y * 9]),equilibrium_distribution_function_p(new double[X * Y * 9]),
-			velocity2D(velocity_initial(0),velocity_initial(1))
+			distribution_function_template_p(new double[X * Y * 9])
 		{
 			c[0] = { 0,0 };
 			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
@@ -294,18 +293,13 @@ namespace distribution_function_template_space {
 		
 		void streaming();
 
-		void equilibrium(distribution_function_template_D2Q9<X,Y> equilibrium_distribution_function);//Solve for the equilibrium distribution function.
+		void equilibrium(distribution_function_template_D2Q9<X,Y> &equilibrium_distribution_function);//Solve for the equilibrium distribution function.
 
 	protected:
 
 		distribution_function_base_space::vector<double, 9> w;
 		distribution_function_base_space::vector<double, 2> c[9];
 		double* distribution_function_template_p;
-		double* equilibrium_distribution_function_p;
-
-	public:
-
-		velocity2D_template_space::velocity2D_template<X, Y> velocity2D;
 		
 	};
 
@@ -361,7 +355,7 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	void equilibrium(distribution_function_template_D2Q9<X, Y> feq) {
+	void distribution_function_template_D2Q9<X, Y>::equilibrium(distribution_function_template_D2Q9<X, Y>& equilibrium_distribution_function) {
 
 	}
 
