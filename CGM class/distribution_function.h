@@ -309,39 +309,69 @@ namespace distribution_function_template_space {
 
 	template <int X, int Y>
 	inline void distribution_function_template_D2Q9<X, Y>::streaming() {
-
+		double* temp_x = new double[X+1];
+		double* temp_y = new double[Y+1];
 		for (int q = 1; q <= 8; q++) {
 			switch (q)
 			{
 			case 1:
-				for (int i = X; i >= 2; i--) for (int j = 1; j <= Y; j++)
-					this->operator()(i, j, q) = this ->operator()(i - 1, j, q); break;
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
+				for (int j = 1; j <= Y; j++) for (int i = X; i >= 2; i--) this->operator()(i, j, q) = this ->operator()(i - 1, j, q); 
+				for (int j = 1; j <= Y; j++) this->operator()(1, j, q) = temp_y[j]; 
+				break;
 			case 2:
-				for (int i = 1; i <= X; i++) for (int j = Y; j >= 2; j--)
-					this->operator()(i, j, q) = this ->operator()(i, j - 1, q); break;
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
+				for (int i = 1; i <= X; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i, j - 1, q); 
+				for (int i = 1; i <= X; i++) this->operator()(i, 1, q) = temp_x[i]; 
+				break;
 			case 3:
-				for (int i = 1; i <= X - 1; i++) for (int j = 1; j <= Y; j++)
-					this->operator()(i, j, q) = this ->operator()(i + 1, j, q); break;
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
+				for (int j = 1; j <= Y; j++) for (int i = 1; i <= X - 1; i++)  this->operator()(i, j, q) = this ->operator()(i + 1, j, q); 
+				for (int j = 1; j <= Y; j++) this->operator()(X, j, q) = temp_y[j]; 
+				break;
 			case 4:
-				for (int i = 1; i <= X; i++) for (int j = 1; j <= Y - 1; j++)
-					this->operator()(i, j, q) = this ->operator()(i, j + 1, q); break;
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
+				for (int i = 1; i <= X; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i, j + 1, q); 
+				for (int i = 1; i <= X; i++) this->operator()(i, Y, q) = temp_x[i]; 
+				break;
 			case 5:
-				for (int i = X; i >= 2; i--) for (int j = Y; j >= 2; j--)
-					this->operator()(i, j, q) = this ->operator()(i - 1, j - 1, q); break;
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
+				for (int i = X; i >= 2; i--) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i - 1, j - 1, q); 
+				for (int j = 2; j <= Y; j++) this->operator()(1, j, q) = temp_y[j - 1];
+				for (int i = 2; i <= X; i++) this->operator()(i, 1, q) = temp_x[i - 1];
+				this->operator()(1, 1, q) = temp_x[X];
+				break;
 			case 6:
-				for (int i = 1; i <= X - 1; i++) for (int j = Y; j >= 2; j--)
-					this->operator()(i, j, q) = this ->operator()(i + 1, j - 1, q); break;
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
+				for (int i = 1; i <= X - 1; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i + 1, j - 1, q); 
+				for (int i = 1; i <= X - 1; i++) this->operator()(i, 1, q) = temp_x[i + 1];
+				for (int j = 2; j <= Y; j++) this->operator()(X, j, q) = temp_y[j - 1];
+				this->operator()(X, 1, q) = temp_x[1];
+				break;
 			case 7:
-				for (int i = 1; i <= X - 1; i++) for (int j = 1; j <= Y - 1; j++)
-					this->operator()(i, j, q) = this ->operator()(i + 1, j + 1, q); break;
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
+				for (int i = 1; i <= X - 1; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i + 1, j + 1, q); 
+				for (int j = 1; j <= Y - 1; j++) this->operator()(X, j, q) = temp_y[j + 1];
+				for (int i = 1; i <= X - 1; i++) this->operator()(i, Y, q) = temp_x[i + 1];
+				this->operator()(X, Y, q) = temp_x[1];
+				break;
 			case 8:
-				for (int i = X; i >= 2; i--) for (int j = 1; j <= Y - 1; j++)
-					this->operator()(i, j, q) = this ->operator()(i - 1, j + 1, q); break;
+				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
+				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
+				for (int i = X; i >= 2; i--) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i - 1, j + 1, q); 
+				for (int j = 1; j <= Y - 1; j++) this->operator()(1, j, q) = temp_y[j + 1];
+				for (int i = 2; i <= X; i++) this->operator()(i, Y, q) = temp_x[i - 1];
+				this->operator()(1, Y, q) = temp_x[X];
+				break;
 			default:
 				break;
 			}
 		}
-
+		delete[]temp_x;
+		delete[]temp_y;
 		return;
 	}
 
