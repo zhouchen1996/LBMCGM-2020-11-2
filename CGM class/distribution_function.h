@@ -143,7 +143,7 @@ namespace distribution_function_template_space {
 	};
 
 
-	namespace force_field_space {
+	namespace vector2D_field_space {
 
 		template<int X,int Y>
 		class force2D_field :public vector2D_field<X, Y> {
@@ -181,7 +181,7 @@ namespace distribution_function_template_space {
 		class density_field;
 	}
 
-	namespace velocity2D_field_space {
+	namespace vector2D_field_space {
 
 		template <int X, int Y>
 		class velocity2D_field :public vector2D_field<X,Y>{
@@ -219,7 +219,7 @@ namespace distribution_function_template_space {
 			}
 
 			//(Force term Guo.et al)velocity2D_field own function for calculate velocity from distribution function
-			velocity2D_field<X, Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X, Y>& rho,force_field_space::force2D_field<X,Y>& force2D) {
+			velocity2D_field<X, Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X, Y>& rho,vector2D_field_space::force2D_field<X,Y>& force2D) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
 						this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7) + 0.5 * force2D(i, j)(0)) / rho(i, j);
@@ -227,6 +227,28 @@ namespace distribution_function_template_space {
 					}
 				}
 				return *this;
+			}
+
+			//velocity2D_field own function for judge if the velocity value is normal
+			bool detect() {
+				double min = 0, max = 0;
+				double temp = 0;
+				int position[4]{ 1,1,1,1 };
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j < Y; j++) {
+						if ((isfinite((*this)(i, j)(0)) && isfinite((*this)(i, j)(1))) != 0) {
+							temp = sqrt((*this)(i, j)(0) * (*this)(i, j)(0) + (*this)(i, j)(1) * (*this)(i, j)(1));
+							min = temp < min ? (position[0] = i, position[1] = j, temp) : min;
+							max = temp > max ? (position[2] = i, position[3] = j, temp) : max;
+						}
+						else {
+							printf("\nvelocity at (%d,%d) is infinite.\n", i, j);
+							return false;
+						}
+					}
+				}
+				printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
+				return true;
 			}
 
 		};
@@ -277,6 +299,16 @@ namespace distribution_function_template_space {
 				return *(scalar_p + index);
 			}
 
+			//solve the sum of two scalar fields
+			scalar_field<X, Y>& blend(scalar_field<X,Y>&scalar_1, scalar_field<X, Y>& scalar_2) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						(*this)(i, j) = scalar_1(i, j) + scalar_2(1, 2);
+					}
+				}
+				return *this;
+			}
+
 		protected:
 
 			double* scalar_p;
@@ -308,7 +340,7 @@ namespace distribution_function_template_space {
 			}
 
 			//density_field own function for calculate density from distribution function
-			density_field& calculate(distribution_function_template_D2Q9<X, Y>& f) {
+			density_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
 				double temp = 0;
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
@@ -354,7 +386,48 @@ namespace distribution_function_template_space {
 		template<int X, int Y>
 		class phase_field :public scalar_field<X, Y> {
 		public:
+
 			phase_field(double phase_initial = 0) :scalar_field<X, Y>(phase_initial) {}
+
+			virtual double& operator()(int i, int j) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				}
+				else if (i < 1) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				}
+				else if (j > Y) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				}
+				else if (j < 1) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				}
+				int index = (i - 1) * Y + (j - 1);
+				return *(scalar_field<X, Y>::scalar_p + index);
+			}
+
+			//These member function is for the color gradient model.
+			//--1--phase_field's own function to calculate phase field (r1-r2)/(r1+r2) or (r1/rr1-r2/rr2)/(r1/rr1+r2/rr2)
+			phase_field<X, Y>& calculate(scalar_field_space::density_field<X,Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, double rho_reference_1 = 1, double rho_refernece_2 = 1) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						(*this)(i, j) = (rho_1(i, j)/rho_reference_1 - rho_2(i, j)/rho_refernece_2) / (rho_1(i, j)/rho_reference_1 + rho_2(i, j)/rho_refernece_2);
+					}
+				}
+				return *this;
+			}
+
+			//--2--phase_field's own function to calculate phase field (r1-r2)/r
+			phase_field<X, Y>& calculate(scalar_field_space::density_field<X, Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, scalar_field_space::density_field<X, Y>& rho) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						(*this)(i, j) = (rho_1(i, j) - rho_2(i, j)) / rho(i,j);
+					}
+				}
+				return *this;
+			}
+
 		};
 
 	}
@@ -420,7 +493,7 @@ namespace distribution_function_template_space {
 
 		//Solve for the equilibrium distribution function.
 		//distribution_function_template_D2Q9.equilibrium(velocity2D_field,scalar_field);
-		distribution_function_template_D2Q9<X,Y>& equilibrium(velocity2D_field_space::velocity2D_field<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
+		distribution_function_template_D2Q9<X,Y>& equilibrium(vector2D_field_space::velocity2D_field<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
 
 		//Detect if the value of the distribution function is abnormal.
 		bool detect();
@@ -515,7 +588,7 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_field_space::velocity2D_field<X, Y>& velocity,
+	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( vector2D_field_space::velocity2D_field<X, Y>& velocity,
 		scalar_field_space::scalar_field<X, Y>& rho) {
 
 		double uu = 0, cu = 0;
