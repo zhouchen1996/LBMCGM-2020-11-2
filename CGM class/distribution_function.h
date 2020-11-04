@@ -1,8 +1,10 @@
 #ifndef _DISTRIBUTION_FUNCTION_H_
 #define _DISTRIBUTION_FUNCTION_H_
+
 #include <iostream>
 #include <cmath>
 #include <cstdio>
+
 //vector template
 namespace distribution_function_template_space {
 	//important!!!!!!!!
@@ -140,22 +142,54 @@ namespace distribution_function_template_space {
 		vector<double, 2>* vector2D_field_p;
 	};
 
+
+	namespace force_field_space {
+
+		template<int X,int Y>
+		class force2D_field :public vector2D_field<X, Y> {
+		public:
+			force2D_field(double initial_force2D_x = 0, double initial_force2D_y = 0) :vector2D_field<X, Y>(initial_force2D_x, initial_force2D_y) {}
+
+			virtual vector<double, 2>& operator()(int i, int j) override {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\nforce2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				}
+				else if (i < 1) {
+					printf("\nforce2D_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				}
+				else if (j > Y) {
+					printf("\nforce2D_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				}
+				else if (j < 1) {
+					printf("\nforce2D_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				}
+				int index = (i - 1) * Y + (j - 1);
+				return *(vector2D_field<X, Y>::vector2D_field_p + index);
+			}
+		};
+
+	}
+
+	//state scalar_field and density_field explicitly beforehand
+	namespace  scalar_field_space {
+
+		template<int X, int Y>
+		class scalar_field;
+
+		template<int X,int Y>
+		class density_field;
+	}
+
 	namespace velocity2D_field_space {
 
 		template <int X, int Y>
-		class velocity2D_field {
+		class velocity2D_field :public vector2D_field<X,Y>{
 		public:
 
-			velocity2D_field(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_field_p(new vector<double, 2>[X * Y]) {
-				for (int r = 0; r < X * Y; r++)
-					*(velocity2D_field_p + r) = { initial_velocity_x,initial_velocity_y };
-			}
+			velocity2D_field(double initial_velocity_x = 0, double initial_velocity_y = 0) :vector2D_field<X, Y>(initial_velocity_x, initial_velocity_y){}
 
-			~velocity2D_field() {
-				delete[]velocity2D_field_p;
-			}
-
-			distribution_function_template_space::vector<double, 2>& operator()(int i, int j) {
+			virtual vector<double, 2>& operator()(int i, int j) override {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d > X\n",i);
@@ -170,22 +204,30 @@ namespace distribution_function_template_space {
 					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d < 1\n",j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(velocity2D_field_p + index);
+				return *(vector2D_field<X, Y>::vector2D_field_p + index);
 			}
-
-			velocity2D_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
+			
+			//velocity2D_field own function for calculate velocity from distribution function
+			velocity2D_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X,Y>& rho) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						this->operator()(i, j)(0) = f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7);
-						this->operator()(i, j)(1) = f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8);
+						this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7))/rho(i,j);
+						this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8))/rho(i,j);
 					}
 				}
 				return *this;
 			}
 
-		protected:
-
-			vector<double, 2>* velocity2D_field_p;
+			//(Force term Guo.et al)velocity2D_field own function for calculate velocity from distribution function
+			velocity2D_field<X, Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X, Y>& rho,force_field_space::force2D_field<X,Y>& force2D) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7) + 0.5 * force2D(i, j)(0)) / rho(i, j);
+						this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8) + 0.5 * force2D(i, j)(1)) / rho(i, j);
+					}
+				}
+				return *this;
+			}
 
 		};
 
@@ -279,6 +321,33 @@ namespace distribution_function_template_space {
 				}
 				return *this;
 			}
+
+			//density_field own function for judge if the density value is normal
+			bool detect() {
+				double min = 0, max = 0;
+				int position[4]{ 1,1,1,1 };
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j < Y; j++) {
+						if (isfinite((*this)(i, j)) != 0) {
+							if ((*this)(i, j) >= 0) {
+								min = this->operator()(i, j) < min ? (position[0] = i, position[1] = j, this->operator()(i, j)) : min;
+								max = this->operator()(i, j) > max ? (position[2] = i, position[3] = j, this->operator()(i, j)) : max;
+							}
+							else {
+								printf("\ndensity at (%d,%d) is %.6f < 0.It doesn't satisfy the requirement that it must be positive.\n", i, j, (*this)(i, j));
+								return false;
+							}
+						}
+						else {
+							printf("\ndensity at (%d,%d) is infinite.\n", i, j);
+							return false;
+						}
+					}
+				}
+				printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
+				return true;
+			}
+
 		};
 
 		//define a phase_field template inheriting from scalar_field template
