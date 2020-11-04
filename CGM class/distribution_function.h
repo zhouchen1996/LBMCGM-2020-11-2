@@ -220,15 +220,50 @@ namespace distribution_function_template_base_space {
 //==3==
 namespace distribution_function_template_space {
 
+	namespace velocity2D_template_space {
+
+		template <int X, int Y>
+		class velocity2D_template {
+		public:
+
+			velocity2D_template(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_base_space::vector<double, 2>[X * Y]) {
+				for (int r = 0; r < X * Y; r++)
+					*(velocity2D_template_p + r) = { initial_velocity_x,initial_velocity_y };
+			}
+
+			~velocity2D_template() {
+				delete[]velocity2D_template_p;
+			}
+
+			distribution_function_base_space::vector<double, 2>& operator()(int i, int j) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				int index = (i - 1) * Y + (j - 1);
+				return *(velocity2D_template_p + index);
+			}
+
+		protected:
+
+			distribution_function_base_space::vector<double, 2>* velocity2D_template_p;
+
+		};
+
+	}
+
+}
+
+//==4==
+namespace distribution_function_template_space {
+
 	//D2Q9 distribution_functions_template--------------------------
 
 	template <int X,int Y>
 	class distribution_function_template_D2Q9  {
 	public:
 
-		distribution_function_template_D2Q9(double rho_initial = 0)
+		distribution_function_template_D2Q9(double rho_initial = 0, distribution_function_base_space::vector<double, 2> velocity_initial = distribution_function_base_space::vector<double, 2>({0,0}))
 			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
-			distribution_function_template_p(new double[X * Y * 9])
+			distribution_function_template_p(new double[X * Y * 9]),equilibrium_distribution_function_p(new double[X * Y * 9]),
+			velocity2D(velocity_initial(0),velocity_initial(1))
 		{
 			c[0] = { 0,0 };
 			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
@@ -238,6 +273,9 @@ namespace distribution_function_template_space {
 				for (int i = 1; i <= X; i++)
 					for (int j = 1; j <= Y; j++)
 						(*this)(i, j, q) = w(q) * rho_initial;
+
+
+
 		}
 
 		~distribution_function_template_D2Q9() {
@@ -245,8 +283,8 @@ namespace distribution_function_template_space {
 		}
 
 		double& operator()(int i, int j, int q) {
-			// (i,j,q) <-- [i-1][j-1][q] <-- [q][i-1][j-1] <-- q * X * Y + (i - 1) * Y + (j - 1)
-			int index = q * X * Y + (i - 1) * Y + (j - 1);
+			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
+			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
 			return *(distribution_function_template_p + index);
 		}
 
@@ -254,15 +292,21 @@ namespace distribution_function_template_space {
 		
 		void blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
 		
+		void streaming();
+
+		void equilibrium(distribution_function_template_D2Q9<X,Y> equilibrium_distribution_function);//Solve for the equilibrium distribution function.
+
 	protected:
 
 		distribution_function_base_space::vector<double, 9> w;
 		distribution_function_base_space::vector<double, 2> c[9];
 		double* distribution_function_template_p;
+		double* equilibrium_distribution_function_p;
 
 	public:
-		void streaming();
 
+		velocity2D_template_space::velocity2D_template<X, Y> velocity2D;
+		
 	};
 
 	template <int X, int Y>
@@ -316,40 +360,12 @@ namespace distribution_function_template_space {
 		return;
 	}
 
-}
-
-//==4==
-namespace distribution_function_template_space {
-
-	namespace velocity2D_template_space {
-
-		template <int X,int Y>
-		class velocity2D_template {
-		public:
-
-			velocity2D_template(double initial_velocity_x = 0,double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_base_space::vector<double, 2>[X * Y]) {
-				for (int r = 0; r < X * Y; r++)
-					*(velocity2D_template_p + r) = { initial_velocity_x,initial_velocity_y };
-			}
-
-			~velocity2D_template() {
-				delete[]velocity2D_template_p;
-			}
-			
-			distribution_function_base_space::vector<double, 2>& operator()(int i, int j) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				int index = (i - 1) * Y + (j - 1);
-				return *(velocity2D_template_p + index);
-			}
-
-		protected:
-
-			distribution_function_base_space::vector<double,2>* velocity2D_template_p;
-
-		};
+	template <int X, int Y>
+	void equilibrium(distribution_function_template_D2Q9<X, Y> feq) {
 
 	}
 
 }
+
 
 #endif // !_DISTRIBUTION_FUNCTION_H_
