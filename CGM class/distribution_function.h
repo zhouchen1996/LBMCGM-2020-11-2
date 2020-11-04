@@ -1,7 +1,7 @@
 #ifndef _DISTRIBUTION_FUNCTION_H_
 #define _DISTRIBUTION_FUNCTION_H_
 
-//==1==
+//vector template
 namespace distribution_function_template_space {
 	//important!!!!!!!!
 	//vector template--------------------------------------
@@ -84,7 +84,7 @@ namespace distribution_function_template_space {
 
 }
 
-//==2==
+//velocity2D_template
 namespace distribution_function_template_space {
 
 	namespace velocity2D_template_space {
@@ -118,7 +118,42 @@ namespace distribution_function_template_space {
 
 }
 
-//==3==
+//scalar_field  template
+namespace distribution_function_template_space {
+
+	namespace scalar_field_space {
+
+		template<int X,int Y>
+		class scalar_field {
+		public:
+
+			scalar_field(double scalar_initial = 0)
+				: scalar_p(new double[X*Y])
+			{
+				for (int r = 0; r < X * Y; r++)
+					*(scalar_p + r) = scalar_initial;
+			}
+
+			~scalar_field(){
+				delete[]scalar_p;
+			}
+
+			double& operator()(int i,int j) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				int index = (i - 1) * Y + (j - 1);
+				return *(scalar_p + index);
+			}
+
+		private:
+
+			double* scalar_p;
+
+		};
+
+	}
+}
+
+//distribution_function_template_D2Q9
 namespace distribution_function_template_space {
 
 	//D2Q9 distribution_functions_template--------------------------
@@ -159,8 +194,8 @@ namespace distribution_function_template_space {
 		void streaming();
 
 		//Solve for the equilibrium distribution function.
-		void equilibrium(distribution_function_template_D2Q9<X,Y> &equilibrium_distribution_function,
-			velocity2D_template_space::velocity2D_template<X,Y> &velocity);
+		//distribution_function_template_D2Q9.equilibrium(velocity2D_template,scalar_field);
+		distribution_function_template_D2Q9<X,Y>& equilibrium(velocity2D_template_space::velocity2D_template<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
 
 	protected:
 
@@ -222,9 +257,20 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	void distribution_function_template_D2Q9<X, Y>::equilibrium(distribution_function_template_D2Q9<X, Y>& equilibrium_distribution_function, 
-		velocity2D_template_space::velocity2D_template<X, Y>& velocity) {
-		
+	distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_template_space::velocity2D_template<X, Y>& velocity,
+		scalar_field_space::scalar_field<X, Y>& rho) {
+
+		double uu = 0, cu = 0;
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				uu = velocity(i, j) * velocity(i, j);
+				for (int q = 0; q <= 8; q++) {
+					cu = velocity(i, j) * c[q];
+					(*this)(i, j, q) = rho(i, j) * w(q) * (1 + 3.0 * cu + 4.5 * cu * cu - 1.5 * uu);
+				}
+			}
+		}
+		return *this;
 	}
 
 }
