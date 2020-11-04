@@ -1,28 +1,8 @@
 #ifndef _DISTRIBUTION_FUNCTION_H_
 #define _DISTRIBUTION_FUNCTION_H_
-namespace distribution_function_base_space {
-
-	//distribution_function_base
-
-	class distribution_function_base {
-	public:
-		distribution_function_base() = default;
-		distribution_function_base(int x_, int y_, int z_, int Q_);
-		~distribution_function_base();
-
-		double& operator()(int i, int j, int k, int q);
-
-	protected:
-		int x;
-		int y;
-		int z;
-		int Q;
-		double* distribution_function_base_p;
-	};
-}
 
 //==1==
-namespace distribution_function_base_space {
+namespace distribution_function_template_space {
 	//important!!!!!!!!
 	//vector template--------------------------------------
 	template <typename T, int N>
@@ -104,120 +84,7 @@ namespace distribution_function_base_space {
 
 }
 
-namespace distribution_function_base_space{
-
-	//velocity_field template------------------------------
-	template <int N>
-	class velocity_field {
-	public:
-		velocity_field() = default;
-		velocity_field(int x_, int y_, int z_);
-		~velocity_field();
-
-		vector<double, N>& operator()(int i, int j, int k);
-
-	private:
-		int x;
-		int y;
-		int z;
-		vector<double, N>* velocity_p;
-	};
-
-	template <int N>
-	velocity_field<N>::velocity_field(int x_, int y_, int z_)
-		:x(x_), y(y_), z(z_)
-	{
-		long xyz = x * y * z;
-		velocity_p = new vector<double, N>[xyz];
-	}
-
-	template <int N>
-	vector<double, N>& velocity_field<N>::operator()(int i, int j, int k) {
-		// (i,j,k) <-- [i-1][j-1][k-1] <-- (i-1)*y*z + (j-1)*z + (k-1)
-		int index = (i - 1) * y * z + (j - 1) * z + (k - 1);
-		return *(velocity_p + index);
-	}
-
-	template <int N>
-	velocity_field<N>::~velocity_field() {
-		delete[]velocity_p;
-	}
-
-}
-
-namespace distribution_function_space {
-
-	//D2Q9 distribution_functions--------------------------
-
-	class distribution_function_D2Q9 :public distribution_function_base_space::distribution_function_base {
-	public:
-
-		using distribution_function_base_space::distribution_function_base::operator();
-		
-		distribution_function_D2Q9() = default;
-		distribution_function_D2Q9(int x_, int y_);
-
-		double& operator()(int i, int j,int q);
-
-		//friend distribution_function_D2Q9 operator+(distribution_function_D2Q9&f1, distribution_function_D2Q9&f2);
-
-	private:
-
-		distribution_function_base_space::vector<double, 9> w;
-		distribution_function_base_space::vector<double, 2> c[9];
-
-	public:
-		void streaming();
-
-	};
-
-	//velocity_field_2D------------------------------------
-
-	class velocity_field_2D: distribution_function_base_space::velocity_field<2>{
-	public:
-
-		using velocity_field::operator();
-
-		velocity_field_2D() = default;
-		velocity_field_2D(int x_, int y_);
-
-		distribution_function_base_space::vector<double, 2>& operator()(int i, int j);
-
-	};
-
-}
-
 //==2==
-namespace distribution_function_template_base_space {
-
-	//distribution_function_base_template
-
-	template <int X, int Y, int Z, int Q>
-	class distribution_function_base_template {
-	public:
-
-		distribution_function_base_template()
-			:distribution_function_base_template_p(new double[X * Y * Z * Q]) {}
-
-		~distribution_function_base_template() {
-			delete[] distribution_function_base_template_p;
-		}
-
-		double& operator()(int i, int j, int k, int q) {
-			// (i,j,k,q) <-- [i-1][j-1][k-1][q] <-- [q][i-1][j-1][k-1] <-- q * X * Y * Z + (i - 1) * Y * Z + (j - 1) * Z + (k - 1)
-			int index = q * X * Y * Z + (i - 1) * Y * Z + (j - 1) * Z + (k - 1);
-			return *(distribution_function_base_template_p + index);
-		}
-
-	protected:
-
-		double* distribution_function_base_template_p;
-
-	};
-
-}
-
-//==3==
 namespace distribution_function_template_space {
 
 	namespace velocity2D_template_space {
@@ -226,7 +93,7 @@ namespace distribution_function_template_space {
 		class velocity2D_template {
 		public:
 
-			velocity2D_template(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_base_space::vector<double, 2>[X * Y]) {
+			velocity2D_template(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_template_space::vector<double, 2>[X * Y]) {
 				for (int r = 0; r < X * Y; r++)
 					*(velocity2D_template_p + r) = { initial_velocity_x,initial_velocity_y };
 			}
@@ -235,7 +102,7 @@ namespace distribution_function_template_space {
 				delete[]velocity2D_template_p;
 			}
 
-			distribution_function_base_space::vector<double, 2>& operator()(int i, int j) {
+			distribution_function_template_space::vector<double, 2>& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				int index = (i - 1) * Y + (j - 1);
 				return *(velocity2D_template_p + index);
@@ -243,7 +110,7 @@ namespace distribution_function_template_space {
 
 		protected:
 
-			distribution_function_base_space::vector<double, 2>* velocity2D_template_p;
+			distribution_function_template_space::vector<double, 2>* velocity2D_template_p;
 
 		};
 
@@ -251,7 +118,7 @@ namespace distribution_function_template_space {
 
 }
 
-//==4==
+//==3==
 namespace distribution_function_template_space {
 
 	//D2Q9 distribution_functions_template--------------------------
@@ -273,8 +140,6 @@ namespace distribution_function_template_space {
 					for (int j = 1; j <= Y; j++)
 						(*this)(i, j, q) = w(q) * rho_initial;
 
-
-
 		}
 
 		~distribution_function_template_D2Q9() {
@@ -293,12 +158,14 @@ namespace distribution_function_template_space {
 		
 		void streaming();
 
-		void equilibrium(distribution_function_template_D2Q9<X,Y> &equilibrium_distribution_function);//Solve for the equilibrium distribution function.
+		//Solve for the equilibrium distribution function.
+		void equilibrium(distribution_function_template_D2Q9<X,Y> &equilibrium_distribution_function,
+			velocity2D_template_space::velocity2D_template<X,Y> &velocity);
 
 	protected:
 
-		distribution_function_base_space::vector<double, 9> w;
-		distribution_function_base_space::vector<double, 2> c[9];
+		distribution_function_template_space::vector<double, 9> w;
+		distribution_function_template_space::vector<double, 2> c[9];
 		double* distribution_function_template_p;
 		
 	};
@@ -346,7 +213,7 @@ namespace distribution_function_template_space {
 	//}
 
 	template <int X,int Y>
-	void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+	void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
 		for (int q = 0; q <= 8; q++)
 			for (int i = 1; i <= X; i++)
 				for (int j = 1; j <= Y; j++)
@@ -355,11 +222,11 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	void distribution_function_template_D2Q9<X, Y>::equilibrium(distribution_function_template_D2Q9<X, Y>& equilibrium_distribution_function) {
-
+	void distribution_function_template_D2Q9<X, Y>::equilibrium(distribution_function_template_D2Q9<X, Y>& equilibrium_distribution_function, 
+		velocity2D_template_space::velocity2D_template<X, Y>& velocity) {
+		
 	}
 
 }
-
 
 #endif // !_DISTRIBUTION_FUNCTION_H_
