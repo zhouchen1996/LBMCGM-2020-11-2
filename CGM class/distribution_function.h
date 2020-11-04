@@ -11,22 +11,21 @@ namespace distribution_function_template_space {
 	class vector {
 	public:
 
-		vector()
-			:v(new T[N])
+		vector() :v(new T[N])
 		{
 			for (int i = 0; i < N; i++) {
-				v[i] = 0;
+				this->operator()(i) = 0;
 			}
 		}
 
 		vector(const vector<T, N>& a) : v(new T[N]) {
 			for (int i = 0; i < N; i++)
-				this->v[i] = a.v[i];
+				this->operator()(i) = a.v[i];
 		}
 
 		vector(const T(&a)[N]) : v(new T[N]) {
 			for (int i = 0; i < N; i++)
-				this->v[i] = a[i];
+				this->operator()(i) = a[i];
 		}
 
 		~vector() {
@@ -47,21 +46,30 @@ namespace distribution_function_template_space {
 			return v[i];
 		}
 
+		T& operator()(int i) const {
+			//start from 0
+			if (i >= N || i < 0) {
+				printf("\nVector template is called, but the subscript exceeds the limit.\n");
+			}
+			return v[i];
+		}
+
 		vector<T, N>& operator=(const vector<T, N>& a) {
 			for (int i = 0; i < N; i++)
-				this->v[i] = a.v[i];
+				//this->v[i] = a.v[i];
+				this->operator()(i) = a(i);
 			return *this;
 		}
 
 		vector<T, N>& operator=(const T(&a)[N]) {
 			for (int i = 0; i < N; i++)
-				this->v[i] = a[i];
+				this->operator()(i) = a[i];
 			return *this;
 		}
 
 		vector<T, N>& operator+=(vector<T, N>& a) {
 			for (int i = 0; i < N; i++)
-				this->v[i] += a.v[i];
+				this->operator()(i) += this->operator()(i);
 			return *this;
 		}
 
@@ -69,12 +77,12 @@ namespace distribution_function_template_space {
 		T* v;
 	};
 
-	// * for vecotr template
+	// * for vector template
 	template <typename T, int N>
 	T operator*(const vector<T, N>& a, const vector<T, N>& b) {
 		T temp(0);
 		for (int i = 0; i < N; i++)
-			temp += (a.v[i] * b.v[i]);
+			temp += (a(i) * b(i));
 		return temp;
 	}
 
@@ -83,59 +91,101 @@ namespace distribution_function_template_space {
 	vector<T, N> operator+(const vector<T, N>& a, const vector<T, N>& b) {
 		vector<T, N> temp_vector;
 		for (int i = 0; i < N; i++)
-			temp_vector.v[i] = a.v[i] + b.v[i];
+			temp_vector(i) = a(i) + b(i);
 		return temp_vector;
 	}
 
 }
 
-//velocity2D_template
+//vector field 
 namespace distribution_function_template_space {
-
+	
 	//state distribution_function_template_D2Q9 explicitly beforehand
 	template<int X, int Y>
 	class distribution_function_template_D2Q9;
 
-	namespace velocity2D_template_space {
+	//define vector field
+	template <int X, int Y>
+	class vector2D_field {
+	public:
+
+		vector2D_field(double initial_vector_x = 0, double initial_vector_y = 0) :vector2D_field_p(new vector<double, 2>[X * Y]) {
+			for (int r = 0; r < X * Y; r++)
+				*(vector2D_field_p + r) = { initial_vector_x,initial_vector_y };
+		}
+
+		~vector2D_field() {
+			delete[]vector2D_field_p;
+		}
+
+		virtual vector<double, 2>& operator()(int i, int j) {
+			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+			if (i > X) {
+				printf("\nvector2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+			}
+			else if (i < 1) {
+				printf("\nvector2D_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+			}
+			else if (j > Y) {
+				printf("\nvector2D_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+			}
+			else if (j < 1) {
+				printf("\nvector2D_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+			}
+			int index = (i - 1) * Y + (j - 1);
+			return *(vector2D_field_p + index);
+		}
+
+	protected:
+		vector<double, 2>* vector2D_field_p;
+	};
+
+	namespace velocity2D_field_space {
 
 		template <int X, int Y>
-		class velocity2D_template {
+		class velocity2D_field {
 		public:
 
-			velocity2D_template(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_template_p(new distribution_function_template_space::vector<double, 2>[X * Y]) {
+			velocity2D_field(double initial_velocity_x = 0, double initial_velocity_y = 0) :velocity2D_field_p(new vector<double, 2>[X * Y]) {
 				for (int r = 0; r < X * Y; r++)
-					*(velocity2D_template_p + r) = { initial_velocity_x,initial_velocity_y };
+					*(velocity2D_field_p + r) = { initial_velocity_x,initial_velocity_y };
 			}
 
-			~velocity2D_template() {
-				delete[]velocity2D_template_p;
+			~velocity2D_field() {
+				delete[]velocity2D_field_p;
 			}
 
 			distribution_function_template_space::vector<double, 2>& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
-					printf("\nvelocity2D_template is called, but the first subscript exceeds the limit: %d > X\n",i);
+					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d > X\n",i);
 				}
 				else if (i < 1) {
-					printf("\nvelocity2D_template is called, but the first subscript exceeds the limit: %d < 1\n",i);
+					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d < 1\n",i);
 				}
 				else if (j > Y) {
-					printf("\nvelocity2D_template is called, but the second subscript exceeds the limit: %d > Y\n",j);
+					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d > Y\n",j);
 				}
 				else if (j < 1) {
-					printf("\nvelocity2D_template is called, but the second subscript exceeds the limit: %d < 1\n",j);
+					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d < 1\n",j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(velocity2D_template_p + index);
+				return *(velocity2D_field_p + index);
 			}
 
-			//velocity2D_template<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
-
-			//}
+			velocity2D_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						this->operator()(i, j)(0) = f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7);
+						this->operator()(i, j)(1) = f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8);
+					}
+				}
+				return *this;
+			}
 
 		protected:
 
-			distribution_function_template_space::vector<double, 2>* velocity2D_template_p;
+			vector<double, 2>* velocity2D_field_p;
 
 		};
 
@@ -300,8 +350,8 @@ namespace distribution_function_template_space {
 		distribution_function_template_D2Q9<X, Y>& streaming();
 
 		//Solve for the equilibrium distribution function.
-		//distribution_function_template_D2Q9.equilibrium(velocity2D_template,scalar_field);
-		distribution_function_template_D2Q9<X,Y>& equilibrium(velocity2D_template_space::velocity2D_template<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
+		//distribution_function_template_D2Q9.equilibrium(velocity2D_field,scalar_field);
+		distribution_function_template_D2Q9<X,Y>& equilibrium(velocity2D_field_space::velocity2D_field<X,Y> &velocity,scalar_field_space::scalar_field<X,Y> &rho);
 
 		//Detect if the value of the distribution function is abnormal.
 		bool detect();
@@ -396,7 +446,7 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_template_space::velocity2D_template<X, Y>& velocity,
+	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_field_space::velocity2D_field<X, Y>& velocity,
 		scalar_field_space::scalar_field<X, Y>& rho) {
 
 		double uu = 0, cu = 0;
