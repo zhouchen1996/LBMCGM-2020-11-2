@@ -41,6 +41,9 @@ namespace distribution_function_template_space {
 
 		T& operator()(int i) {
 			//start from 0
+			if (i >= N || i < 0) { 
+				printf("\nVector template is called, but the subscript exceeds the limit.\n"); 
+			}
 			return v[i];
 		}
 
@@ -106,6 +109,18 @@ namespace distribution_function_template_space {
 
 			distribution_function_template_space::vector<double, 2>& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\nvelocity2D_template is called, but the first subscript exceeds the limit: %d > X\n",i);
+				}
+				else if (i < 1) {
+					printf("\nvelocity2D_template is called, but the first subscript exceeds the limit: %d < 1\n",i);
+				}
+				else if (j > Y) {
+					printf("\nvelocity2D_template is called, but the second subscript exceeds the limit: %d > Y\n",j);
+				}
+				else if (j < 1) {
+					printf("\nvelocity2D_template is called, but the second subscript exceeds the limit: %d < 1\n",j);
+				}
 				int index = (i - 1) * Y + (j - 1);
 				return *(velocity2D_template_p + index);
 			}
@@ -123,14 +138,17 @@ namespace distribution_function_template_space {
 //scalar_field  template
 namespace distribution_function_template_space {
 
+	//state distribution_function_template_D2Q9 explicitly beforehand
+	template<int X, int Y>
+	class distribution_function_template_D2Q9;
+
 	namespace scalar_field_space {
 
+		//define a scalar_field template
 		template<int X,int Y>
 		class scalar_field {
 		public:
-
-			scalar_field(double scalar_initial = 0)
-				: scalar_p(new double[X*Y])
+			scalar_field(double scalar_initial = 0) : scalar_p(new double[X*Y])
 			{
 				for (int r = 0; r < X * Y; r++)
 					*(scalar_p + r) = scalar_initial;
@@ -140,17 +158,78 @@ namespace distribution_function_template_space {
 				delete[]scalar_p;
 			}
 
-			double& operator()(int i,int j) {
+			virtual double& operator()(int i,int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				}
+				else if (i < 1) {
+					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				}
+				else if (j > Y) {
+					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				}
+				else if (j < 1) {
+					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				}
 				int index = (i - 1) * Y + (j - 1);
 				return *(scalar_p + index);
 			}
 
-		private:
+		protected:
 
 			double* scalar_p;
 
 		};
+
+		//define a density_field template inheriting from scalar_field template
+		template<int X,int Y>
+		class density_field :public scalar_field<X, Y> {
+		public:
+			density_field(double density_initial = 1.0) :scalar_field<X, Y>(density_initial) {}
+
+			virtual double& operator()(int i, int j) override{
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				}
+				else if (i < 1) {
+					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				}
+				else if (j > Y) {
+					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				}
+				else if (j < 1) {
+					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				}
+				int index = (i - 1) * Y + (j - 1);
+				return *(scalar_field<X,Y>::scalar_p + index);
+			}
+
+			//density_field own function for calculate density from distribution function
+			density_field& calculate(distribution_function_template_D2Q9<X, Y>& f) {
+				double temp = 0;
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						temp = 0;
+						for (int q = 0; q <= 8; q++) {
+							temp += f(i, j, q);
+						}
+						(*this)(i, j) = temp;
+					}
+				}
+				return *this;
+			}
+		};
+
+		//define a phase_field template inheriting from scalar_field template
+		template<int X, int Y>
+		class phase_field :public scalar_field<X, Y> {
+		public:
+			phase_field(double phase_initial = 0) :scalar_field<X, Y>(phase_initial) {}
+		};
+
+		
 
 	}
 }
@@ -185,6 +264,24 @@ namespace distribution_function_template_space {
 
 		double& operator()(int i, int j, int q) {
 			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
+			if (i > X) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the first subscript exceeds the limit: %d > X\n", i);
+			}
+			else if (i < 1) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the first subscript exceeds the limit: %d < 1\n", i);
+			}
+			else if (j > Y) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the second subscript exceeds the limit: %d > Y\n", j);
+			}
+			else if (j < 1) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the second subscript exceeds the limit: %d < 1\n", j);
+			}
+			else if (q < 0) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d < 0\n", q);
+			}
+			else if (q > 8) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d > 8\n", q);
+			}
 			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
 			return *(distribution_function_template_p + index);
 		}
@@ -211,7 +308,7 @@ namespace distribution_function_template_space {
 	};
 
 	template <int X, int Y>
-	void distribution_function_template_D2Q9<X, Y>::streaming() {
+	inline void distribution_function_template_D2Q9<X, Y>::streaming() {
 
 		for (int q = 1; q <= 8; q++) {
 			switch (q)
@@ -253,7 +350,7 @@ namespace distribution_function_template_space {
 	//}
 
 	template <int X,int Y>
-	void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+	inline void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
 		for (int q = 0; q <= 8; q++)
 			for (int i = 1; i <= X; i++)
 				for (int j = 1; j <= Y; j++)
@@ -262,7 +359,7 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_template_space::velocity2D_template<X, Y>& velocity,
+	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( velocity2D_template_space::velocity2D_template<X, Y>& velocity,
 		scalar_field_space::scalar_field<X, Y>& rho) {
 
 		double uu = 0, cu = 0;
@@ -279,7 +376,7 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
-	bool distribution_function_template_D2Q9<X, Y>::detect() {
+	inline bool distribution_function_template_D2Q9<X, Y>::detect() {
 		double min = 0, max = 0;
 		int position[4]{ 1,1,1,1 };
 		for (int i = 1; i <= X; i++) {
