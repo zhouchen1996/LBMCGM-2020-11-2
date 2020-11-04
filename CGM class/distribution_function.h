@@ -92,6 +92,10 @@ namespace distribution_function_template_space {
 //velocity2D_template
 namespace distribution_function_template_space {
 
+	//state distribution_function_template_D2Q9 explicitly beforehand
+	template<int X, int Y>
+	class distribution_function_template_D2Q9;
+
 	namespace velocity2D_template_space {
 
 		template <int X, int Y>
@@ -125,6 +129,10 @@ namespace distribution_function_template_space {
 				return *(velocity2D_template_p + index);
 			}
 
+			//velocity2D_template<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
+
+			//}
+
 		protected:
 
 			distribution_function_template_space::vector<double, 2>* velocity2D_template_p;
@@ -137,6 +145,7 @@ namespace distribution_function_template_space {
 
 //scalar_field  template
 namespace distribution_function_template_space {
+
 
 	//state distribution_function_template_D2Q9 explicitly beforehand
 	template<int X, int Y>
@@ -229,8 +238,6 @@ namespace distribution_function_template_space {
 			phase_field(double phase_initial = 0) :scalar_field<X, Y>(phase_initial) {}
 		};
 
-		
-
 	}
 }
 
@@ -288,9 +295,9 @@ namespace distribution_function_template_space {
 
 		//friend distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2);
 		
-		void blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
+		distribution_function_template_D2Q9<X, Y>& blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
 		
-		void streaming();
+		distribution_function_template_D2Q9<X, Y>& streaming();
 
 		//Solve for the equilibrium distribution function.
 		//distribution_function_template_D2Q9.equilibrium(velocity2D_template,scalar_field);
@@ -308,7 +315,7 @@ namespace distribution_function_template_space {
 	};
 
 	template <int X, int Y>
-	inline void distribution_function_template_D2Q9<X, Y>::streaming() {
+	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::streaming() {
 		double* temp_x = new double[X+1];
 		double* temp_y = new double[Y+1];
 		for (int q = 1; q <= 8; q++) {
@@ -372,7 +379,7 @@ namespace distribution_function_template_space {
 		}
 		delete[]temp_x;
 		delete[]temp_y;
-		return;
+		return *this;
 	}
 
 	//template <int X,int Y>
@@ -380,12 +387,12 @@ namespace distribution_function_template_space {
 	//}
 
 	template <int X,int Y>
-	inline void distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
 		for (int q = 0; q <= 8; q++)
 			for (int i = 1; i <= X; i++)
 				for (int j = 1; j <= Y; j++)
 					(*this)(i, j, q) = f1(i, j, q) + f2(i, j, q);
-		return;
+		return *this;
 	}
 
 	template <int X, int Y>
