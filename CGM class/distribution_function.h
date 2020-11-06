@@ -265,6 +265,18 @@ namespace distribution_function_template_space {
 	template<int X, int Y>
 	class distribution_function_template_D2Q9;
 
+	//state areatype and fluidtype explicitly beforehand
+	enum class areatype;
+
+	enum class fluidtype;
+
+	//state area_field and fluid_field explicitly beforehand
+	template<typename T, int X, int Y>
+	class area_field;
+
+	template<typename T, int X, int Y>
+	class fluid_field;
+
 	namespace scalar_field_space {
 
 		//define a scalar_field template
@@ -409,16 +421,45 @@ namespace distribution_function_template_space {
 
 			//These member function is for the color gradient model.
 			//--1--phase_field's own function to calculate phase field (r1-r2)/(r1+r2) or (r1/rr1-r2/rr2)/(r1/rr1+r2/rr2)
-			phase_field<X, Y>& calculate(scalar_field_space::density_field<X,Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, double rho_reference_1 = 1, double rho_refernece_2 = 1) {
+			phase_field<X, Y>& calculate(scalar_field_space::density_field<X,Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2,double rho_reference_1 = 1, double rho_refernece_2 = 1) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						(*this)(i, j) = (rho_1(i, j)/rho_reference_1 - rho_2(i, j)/rho_refernece_2) / (rho_1(i, j)/rho_reference_1 + rho_2(i, j)/rho_refernece_2);
+						double a = rho_1(i, j) / rho_reference_1 - rho_2(i, j) / rho_refernece_2;
+						double b = rho_1(i, j) / rho_reference_1 + rho_2(i, j) / rho_refernece_2;
+						if ( b > 0) {
+							(*this)(i, j) = a / b;
+						}
+						else {
+							(*this)(i, j) = a / b;
+							printf("phase_field<X, Y>::calculate(rho1,rho2,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
+						}
 					}
 				}
 				return *this;
 			}
 
-			//--2--phase_field's own function to calculate phase field (r1-r2)/r
+			//--2--phase_field's own function to calculate phase field and limit the scope to a certain fluid region F,FB,FL,inlet,outlet,inlet_S,outlet_S except S,SB,SL 
+			//(r1-r2)/(r1+r2) or (r1/rr1-r2/rr2)/(r1/rr1+r2/rr2)
+			phase_field<X, Y>& calculate(scalar_field_space::density_field<X, Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, area_field<areatype,X,Y> areafield,double rho_reference_1 = 1, double rho_refernece_2 = 1) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
+							double a = rho_1(i, j) / rho_reference_1 - rho_2(i, j) / rho_refernece_2;
+							double b = rho_1(i, j) / rho_reference_1 + rho_2(i, j) / rho_refernece_2;
+							if (b > 0) {
+								(*this)(i, j) = a / b;
+							}
+							else {
+								(*this)(i, j) = a / b;
+								printf("phase_field<X, Y>::calculate(rho1,rho2,areafield,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
+							}
+						}
+					}
+				}
+				return *this;
+			}
+
+			//--3--phase_field's own function to calculate phase field (r1-r2)/r
 			phase_field<X, Y>& calculate(scalar_field_space::density_field<X, Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, scalar_field_space::density_field<X, Y>& rho) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
@@ -428,31 +469,129 @@ namespace distribution_function_template_space {
 				return *this;
 			}
 
+			//--1--determine the color type(fluidtype)
+			phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype,X,Y> fluidfield, area_field<areatype,X,Y> areafield, double delta = 0.7){
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						if (isfinite((*this)(i, j)) != 0) {
+							if ((*this)(i, j) > delta) {
+								fluidfield = fluidtype::red;
+							}
+							else if ((*this)(i, j) < -delta) {
+								fluidfield = fluidtype::blue;
+							}
+							else
+							{
+								fluidfield = fluidtype::interface;
+							}
+						}
+						else {
+							printf("phase_field<X, Y>::determine_fluidtype() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
+							return *this;
+						}
+					}
+				}
+				return *this;
+			}
+
+			//--2--determine the color type(fluidtype)
+			//phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype, X, Y> fluidfield, double delta = 0.7) {
+			//	for (int i = 1; i <= X; i++) {
+			//		for (int j = 1; j <= Y; j++) {
+			//			if (isfinite((*this)(i, j)) != 0) {
+			//				if ((*this)(i, j) > delta) {
+			//					fluidfield = fluidtype::red;
+			//				}
+			//				else if ((*this)(i, j) < -delta) {
+			//					fluidfield = fluidtype::blue;
+			//				}
+			//				else
+			//				{
+			//					fluidfield = fluidtype::interface;
+			//				}
+			//			}
+
+			//		}
+			//	}
+			//	return *this;
+			//}
+			
+
+
 		};
 
 	}
 
 }
 
-//define a class associated with a area type that represents different areas
+//define classes associated with area type and fluid type that represents different areas
 namespace distribution_function_template_space {
 
-	enum class areatype{S,SB,SL,F,FB,FL,left,right,upper,bottom,obstacle,red,blue,interface,contactline,
-	interfaceNotContactline};
+	enum class areatype{S,F,SB,SL,FB,FL,inlet,outlet,inlet_S,outlet_S};
+	enum class fluidtype{red,blue,interface};
 
 	template<typename T,int X, int Y>
 	class area_field {
 	public:
-		area_field(T area_initial_type) :area_field_p(new T[X * Y]) {
-			for (int r = 0; r < X * Y; r++) {
+		area_field(T area_initial_type) :area_field_p(new T[(X + 2) * (Y + 2)]) {
+			for (int r = 0; r < (X + 2) * (Y + 2); r++) {
 				*area_field_p = area_initial_type;
 			}
 		}
 		~area_field() {
 			delete[]area_field_p;
 		}
+		T& operator()(int i,int j) {
+			// (i,j) <-- [i][j] <-- i * Y + j
+			if (i > X + 1) {
+				printf("\narea_field is called, but the first subscript exceeds the limit: %d > X + 1\n", i);
+			}
+			else if (i < 0) {
+				printf("\narea_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
+			}
+			else if (j > Y + 1) {
+				printf("\narea_field is called, but the second subscript exceeds the limit: %d > Y + 1\n", j);
+			}
+			else if (j < 0) {
+				printf("\narea_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
+			}
+			int index = i * Y + j;
+			return *(area_field_p + index);
+		}
 	protected:
 		T* area_field_p;
+	};
+
+	template<typename T, int X, int Y>
+	class fluid_field {
+	public:
+		fluid_field(T fluid_initial_type) :fluid_field_p(new T[X * Y]) {
+			for (int r = 0; r < X * Y; r++) {
+				*fluid_field_p = fluid_initial_type;
+			}
+		}
+		~fluid_field() {
+			delete[]fluid_field_p;
+		}
+		T& operator()(int i, int j) {
+			// (i,j) <-- [i-1][j-1] <-- (i-1) * Y + (j-1)
+			if (i > X) {
+				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d > X + 1\n", i);
+			}
+			else if (i < 1) {
+				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
+			}
+			else if (j > Y) {
+				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d > Y + 1\n", j);
+			}
+			else if (j < 1) {
+				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
+			}
+			int index = (i - 1) * Y + (j - 1);
+			return *(fluid_field_p + index);
+		}
+	protected:
+		T* fluid_field_p;
 	};
 
 }
@@ -655,6 +794,11 @@ namespace distribution_function_template_space {
 		printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
 		return true;
 	}
+
+}
+
+//1.collision 2.perturbation 3.recolor
+namespace distribution_function_template_space {
 
 }
 
