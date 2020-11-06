@@ -612,16 +612,19 @@ namespace distribution_function_template_space {
 	template<typename T,int X, int Y>
 	class area_field {
 	public:
+
+		area_field() :area_field_p(new T[(X + 2) * (Y + 2)]) {}
+
 		area_field(T area_initial_type) :area_field_p(new T[(X + 2) * (Y + 2)]) {
 			for (int r = 0; r < (X + 2) * (Y + 2); r++) {
-				*area_field_p = area_initial_type;
+				*(area_field_p + r) = area_initial_type;
 			}
 		}
 		~area_field() {
 			delete[]area_field_p;
 		}
 		T& operator()(int i,int j) {
-			// (i,j) <-- [i][j] <-- i * Y + j
+			// (i,j) <-- [i][j] <-- i * (Y + 2) + j
 			if (i > X + 1) {
 				printf("\narea_field is called, but the first subscript exceeds the limit: %d > X + 1\n", i);
 			}
@@ -634,7 +637,7 @@ namespace distribution_function_template_space {
 			else if (j < 0) {
 				printf("\narea_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
 			}
-			int index = i * Y + j;
+			int index = i * (Y + 2) + j;
 			return *(area_field_p + index);
 		}
 	protected:
@@ -644,9 +647,12 @@ namespace distribution_function_template_space {
 	template<typename T, int X, int Y>
 	class fluid_field {
 	public:
+
+		fluid_field() :fluid_field_p(new T[X * Y]) {}
+
 		fluid_field(T fluid_initial_type) :fluid_field_p(new T[X * Y]) {
 			for (int r = 0; r < X * Y; r++) {
-				*fluid_field_p = fluid_initial_type;
+				*(fluid_field_p + r) = fluid_initial_type;
 			}
 		}
 		~fluid_field() {
@@ -655,16 +661,16 @@ namespace distribution_function_template_space {
 		T& operator()(int i, int j) {
 			// (i,j) <-- [i-1][j-1] <-- (i-1) * Y + (j-1)
 			if (i > X) {
-				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d > X + 1\n", i);
+				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d > X\n", i);
 			}
 			else if (i < 1) {
-				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
+				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
 			}
 			else if (j > Y) {
-				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d > Y + 1\n", j);
+				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
 			}
 			else if (j < 1) {
-				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
+				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
 			}
 			int index = (i - 1) * Y + (j - 1);
 			return *(fluid_field_p + index);
@@ -684,19 +690,12 @@ namespace distribution_function_template_space {
 	class distribution_function_template_D2Q9  {
 	public:
 
-		distribution_function_template_D2Q9(double rho_initial = 0)
-			:w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 }),
-			distribution_function_template_p(new double[X * Y * 9])
+		distribution_function_template_D2Q9(double rho_initial = 0) : distribution_function_template_p(new double[X * Y * 9])
 		{
-			c[0] = { 0,0 };
-			c[1] = { 1,0 }; c[2] = { 0,1 }; c[3] = { -1,0 }; c[4] = { 0,-1 };
-			c[5] = { 1,1 }; c[6] = { -1,1 }; c[7] = { -1,-1 }; c[8] = { 1,-1 };
-			
 			for (int q = 0; q <= 8; q++)
 				for (int i = 1; i <= X; i++)
 					for (int j = 1; j <= Y; j++)
 						(*this)(i, j, q) = w(q) * rho_initial;
-
 		}
 
 		~distribution_function_template_D2Q9() {
@@ -740,13 +739,49 @@ namespace distribution_function_template_space {
 		//Detect if the value of the distribution function is abnormal.
 		bool detect();
 
+		distribution_function_template_D2Q9<X, Y>& single_phase_collison(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+
+
+
 	protected:
 
-		distribution_function_template_space::vector<double, 9> w;
-		distribution_function_template_space::vector<double, 2> c[9];
+		static vector<double, 9> w;
+		static vector<double, 2> c[9];
 		double* distribution_function_template_p;
-		
+
+	public:
+
+		//It works for all distribution functions¡£
+		static vector2D_field_space::velocity2D_field<X, Y> velocity;
+		static area_field<areatype, X, Y> area;
+
+		//It varies depending on the different distribution functions.
+		scalar_field_space::density_field<X, Y> density;
+
 	};
+
+	//initialize (constant)
+	//--1--
+	template <int X, int Y>
+	vector<double, 9> distribution_function_template_D2Q9<X,Y>::w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 });
+	
+	//--2--
+	template <int X, int Y>
+	vector<double, 2> distribution_function_template_D2Q9<X, Y>::c[9]
+	{ vector<double, 2>({0, 0}),vector<double, 2>({1, 0}),vector<double, 2>({0, 1}),
+		vector<double, 2>({-1, 0}),vector<double, 2>({0, -1}),vector<double, 2>({1, 1}),
+		vector<double, 2>({-1, 1}),vector<double, 2>({-1, -1}),vector<double, 2>({1, -1})};
+
+	//initialize (optional)
+	//--1--
+	template <int X, int Y>
+	vector2D_field_space::velocity2D_field<X, Y> distribution_function_template_D2Q9<X, Y>::velocity(0.001, 0);
+
+	//--2--
+	template<int X,int Y>
+	area_field<areatype, X, Y> distribution_function_template_D2Q9<X, Y>::area(areatype::F);
+
+
 
 	template <int X, int Y>
 	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::streaming() {
@@ -873,6 +908,30 @@ namespace distribution_function_template_space {
 		printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
 		return true;
 	}
+
+}
+
+//A distribution function class template for CGM.
+namespace distribution_function_template_space {
+	
+	template <int X, int Y>
+	class distribution_function_CGM_D2Q9 :public distribution_function_template_D2Q9<X,Y> {
+	public:
+
+		distribution_function_CGM_D2Q9(double rho_initial = 0) :distribution_function_template_D2Q9<X,Y>(rho_initial){}
+
+		//for color gradient model(CGM)
+		static scalar_field_space::phase_field<X, Y> phaseField;
+		static fluid_field<fluidtype, X, Y> fluidcolor;
+	};
+
+	//initialize
+	//--1--
+	template <int X, int Y>
+	scalar_field_space::phase_field<X, Y> distribution_function_CGM_D2Q9<X, Y>::phaseField;
+	//--2--
+	template<int X, int Y>
+	fluid_field<fluidtype, X, Y> distribution_function_CGM_D2Q9<X, Y>::fluidcolor(fluidtype::blue);
 
 }
 
