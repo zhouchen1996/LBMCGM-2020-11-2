@@ -331,7 +331,21 @@ namespace distribution_function_template_space {
 		template<int X,int Y>
 		class density_field :public scalar_field<X, Y> {
 		public:
-			density_field(double density_initial = 1.0) :scalar_field<X, Y>(density_initial) {}
+
+			density_field(double density_initial = 1.0, double solid_density_ = 1.0) :scalar_field<X, Y>(density_initial), solid_density(solid_density_) {}
+			
+			//set virtual solid density
+			density_field(area_field<areatype,X,Y>& areafield, double density_initial = 1.0, double solid_density_ = 1.0) :scalar_field<X, Y>(density_initial), solid_density(solid_density_) {
+				
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						if (areafield(i, j) == areatype::SL && areafield(i, j) == areatype::SB) {
+							(*this)(i, j) = solid_density;
+						}
+					}
+				}
+
+			}
 
 			double& operator()(int i, int j){
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
@@ -350,6 +364,19 @@ namespace distribution_function_template_space {
 				int index = (i - 1) * Y + (j - 1);
 				return *(scalar_field<X,Y>::scalar_p + index);
 			}
+
+			//carefully! 女風聞喘
+			//for calculating phase field gradient
+			//When the index may exceeds the limit,the density is virtual solid density(a functor convenient for setting wettability conditions).
+			double operator()(int i, int j, int) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X || i < 1 || j > Y || j < 1) {
+					return solid_density;
+				}
+				int index = (i - 1) * Y + (j - 1);
+				return *(scalar_field<X, Y>::scalar_p + index);
+			}
+
 
 			//density_field own function for calculate density from distribution function
 			density_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f) {
@@ -392,6 +419,10 @@ namespace distribution_function_template_space {
 				return true;
 			}
 
+		protected:
+
+			double solid_density;
+
 		};
 
 		//define a phase_field template inheriting from scalar_field template
@@ -399,7 +430,7 @@ namespace distribution_function_template_space {
 		class phase_field :public scalar_field<X, Y> {
 		public:
 
-			phase_field(double phase_initial = 0) :scalar_field<X, Y>(phase_initial) {}
+			phase_field(double phase_initial = 0,double solid_phase_field_ = 0.0) :scalar_field<X, Y>(phase_initial),solid_phase_field(solid_phase_field_) {}
 
 			double& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
@@ -419,19 +450,14 @@ namespace distribution_function_template_space {
 				return *(scalar_field<X, Y>::scalar_p + index);
 			}
 
-			double& operator()(int i, int j,int) {
+
+			//carefully! 女風聞喘
+			//for calculating phase field gradient
+			//When calculating the gradient, the index may exceeds the limit(a functor convenient for setting wettability conditions).
+			double operator()(int i, int j,int) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X\n", i);
-				}
-				else if (i < 1) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
-				}
-				else if (j > Y) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
-				}
-				else if (j < 1) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				if (i > X || i < 1 || j > Y || j < 1) {
+					return solid_phase_field;
 				}
 				int index = (i - 1) * Y + (j - 1);
 				return *(scalar_field<X, Y>::scalar_p + index);
@@ -449,7 +475,7 @@ namespace distribution_function_template_space {
 						}
 						else {
 							(*this)(i, j) = a / b;
-							printf("phase_field<X, Y>::calculate(rho1,rho2,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
+							printf("--1--phase_field<X, Y>::calculate(rho1,rho2,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
 						}
 					}
 				}
@@ -458,7 +484,7 @@ namespace distribution_function_template_space {
 
 			//--2--phase_field's own function to calculate phase field and limit the scope to a certain fluid region F,FB,FL,inlet,outlet,inlet_S,outlet_S except S,SB,SL 
 			//(r1-r2)/(r1+r2) or (r1/rr1-r2/rr2)/(r1/rr1+r2/rr2)
-			phase_field<X, Y>& calculate(scalar_field_space::density_field<X, Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, area_field<areatype,X,Y> areafield,double rho_reference_1 = 1, double rho_refernece_2 = 1) {
+			phase_field<X, Y>& calculate(scalar_field_space::density_field<X, Y>& rho_1, scalar_field_space::density_field<X, Y>& rho_2, area_field<areatype,X,Y>& areafield,double rho_reference_1 = 1, double rho_refernece_2 = 1) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
 						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
@@ -469,7 +495,7 @@ namespace distribution_function_template_space {
 							}
 							else {
 								(*this)(i, j) = a / b;
-								printf("phase_field<X, Y>::calculate(rho1,rho2,areafield,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
+								printf("--2--phase_field<X, Y>::calculate(rho1,rho2,areafield,1,1) is called,but at (%d,%d) rho1 + rho2 = %.5f< 0", i, j, b);
 							}
 						}
 					}
@@ -488,7 +514,7 @@ namespace distribution_function_template_space {
 			}
 
 			//--1--distinguish the fluidfield by the phase field and delta
-			phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype,X,Y> fluidfield, area_field<areatype,X,Y> areafield,double delta = 0.7){
+			phase_field<X, Y>& find_interface_by_phasefield(fluid_field<fluidtype,X,Y>& fluidfield, area_field<areatype,X,Y>& areafield,double delta = 0.7){
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
 						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
@@ -505,7 +531,7 @@ namespace distribution_function_template_space {
 								}
 							}
 							else {
-								printf("phase_field<X, Y>::determine_fluidtype() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
+								printf("--1--phase_field<X, Y>::find_interface_by_phasefield() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
 								return *this;
 							}
 						}
@@ -514,32 +540,52 @@ namespace distribution_function_template_space {
 				return *this;
 			}
 
-			//--2--distinguish the fluidfield by the phase field gradient and delta
-			//phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype, X, Y> fluidfield, area_field<areatype,X,Y> areafield,double delta_2 = 0.05) {
-			//	
-			//	for (int i = 1; i <= X; i++) {
-			//		for (int j = 1; j <= Y; j++) {
-			//			if (isfinite((*this)(i, j)) != 0) {
+			//--2--distinguish the fluidfield by the phase field GRADIENT and delta
+			phase_field<X, Y>& find_interface_by_gradient(fluid_field<fluidtype, X, Y>& fluidfield, area_field<areatype,X,Y>& areafield,double delta_2 = 0.05) {
+				
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
+							if (isfinite((*this)(i, j)) != 0) {
+								if (phase_field_gradient(i, j) * phase_field_gradient(i, j) > delta_2) {
+									fluidfield = fluidtype::interface;
+								}
+								else if ((*this)(i, j) >0) {
+									fluidfield = fluidtype::red;
+								}
+								else
+								{
+									fluidfield = fluidtype::blue;
+								}
+							}
+							else {
+								printf("--2--phase_field<X, Y>::find_interface_by_gradient() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
+								return *this;
+							}
+						}
+					}
+				}
 
-			//			}
-			//		}
-			//	}
-
-			//	return *this;
-			//}
+				return *this;
+			}
 			
-			//solve for the phase field gradient
-			vector2D_field<X, Y>& gradient(area_field<areatype, X, Y> areafield) {
+			//solve for the phase field gradient( use the special functor (int i, int j, int=0) )
+			vector2D_field<X, Y>& gradient(area_field<areatype, X, Y>& areafield) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
 						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
 
-							phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i - 1, j + 1))
-								+ 1.0 / 3.0 * ((*this)(i + 1, j) - (*this)(i - 1, j)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1) - (*this)(i - 1, j - 1));
-
-							phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i + 1, j - 1))
-								+ 1.0 / 3.0 * ((*this)(i, j + 1) - (*this)(i, j - 1)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1) - (*this)(i - 1, j - 1));
+							//phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i - 1, j + 1))
+							//	+ 1.0 / 3.0 * ((*this)(i + 1, j) - (*this)(i - 1, j)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1) - (*this)(i - 1, j - 1));
+							//phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i + 1, j - 1))
+							//	+ 1.0 / 3.0 * ((*this)(i, j + 1) - (*this)(i, j - 1)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1) - (*this)(i - 1, j - 1));
 							
+							phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1, 0) - (*this)(i - 1, j + 1, 0))
+								+ 1.0 / 3.0 * ((*this)(i + 1, j, 0) - (*this)(i - 1, j, 0)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1, 0) - (*this)(i - 1, j - 1, 0));
+							
+							phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1, 0) - (*this)(i + 1, j - 1, 0))
+								+ 1.0 / 3.0 * ((*this)(i, j + 1, 0) - (*this)(i, j - 1, 0)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1, 0) - (*this)(i - 1, j - 1, 0));
+
 						}
 					}
 				}
@@ -547,25 +593,13 @@ namespace distribution_function_template_space {
 			}
 
 			protected:
-				//phase field gradient
+
+				double solid_phase_field;
 				vector2D_field<X, Y> phase_field_gradient;
 
 		};
 
 	}
-
-	class phase_field_gradient {
-	public:
-		phase_field_gradient() = default;
-		phase_field_gradient(int n) :phase_field_gradient_site(new vector<double,2>[n]){
-
-		}
-		~phase_field_gradient()
-		{
-			delete[]phase_field_gradient_site;
-		}
-		vector<double, 2> *phase_field_gradient_site;
-	};
 
 }
 
@@ -842,7 +876,7 @@ namespace distribution_function_template_space {
 
 }
 
-//1.collision 2.perturbation 3.recolor
+//1.collision 2.perturbation 3.recolor : the member functions OF distribution function tempalte class
 namespace distribution_function_template_space {
 
 }
