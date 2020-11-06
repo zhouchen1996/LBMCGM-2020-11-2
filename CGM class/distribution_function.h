@@ -120,7 +120,7 @@ namespace distribution_function_template_space {
 			delete[]vector2D_field_p;
 		}
 
-		virtual vector<double, 2>& operator()(int i, int j) {
+		vector<double, 2>& operator()(int i, int j) {
 			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 			if (i > X) {
 				printf("\nvector2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
@@ -150,7 +150,7 @@ namespace distribution_function_template_space {
 		public:
 			force2D_field(double initial_force2D_x = 0, double initial_force2D_y = 0) :vector2D_field<X, Y>(initial_force2D_x, initial_force2D_y) {}
 
-			virtual vector<double, 2>& operator()(int i, int j) override {
+			vector<double, 2>& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\nforce2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
@@ -189,7 +189,7 @@ namespace distribution_function_template_space {
 
 			velocity2D_field(double initial_velocity_x = 0, double initial_velocity_y = 0) :vector2D_field<X, Y>(initial_velocity_x, initial_velocity_y){}
 
-			virtual vector<double, 2>& operator()(int i, int j) override {
+			vector<double, 2>& operator()(int i, int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d > X\n",i);
@@ -293,7 +293,7 @@ namespace distribution_function_template_space {
 				delete[]scalar_p;
 			}
 
-			virtual double& operator()(int i,int j) {
+			double& operator()(int i,int j) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d > X\n", i);
@@ -333,7 +333,7 @@ namespace distribution_function_template_space {
 		public:
 			density_field(double density_initial = 1.0) :scalar_field<X, Y>(density_initial) {}
 
-			virtual double& operator()(int i, int j) override{
+			double& operator()(int i, int j){
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d > X\n", i);
@@ -401,7 +401,25 @@ namespace distribution_function_template_space {
 
 			phase_field(double phase_initial = 0) :scalar_field<X, Y>(phase_initial) {}
 
-			virtual double& operator()(int i, int j) {
+			double& operator()(int i, int j) {
+				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				if (i > X) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				}
+				else if (i < 1) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				}
+				else if (j > Y) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				}
+				else if (j < 1) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				}
+				int index = (i - 1) * Y + (j - 1);
+				return *(scalar_field<X, Y>::scalar_p + index);
+			}
+
+			double& operator()(int i, int j,int) {
 				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
 				if (i > X) {
 					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X\n", i);
@@ -469,58 +487,85 @@ namespace distribution_function_template_space {
 				return *this;
 			}
 
-			//--1--determine the color type(fluidtype)
-			phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype,X,Y> fluidfield, area_field<areatype,X,Y> areafield, double delta = 0.7){
+			//--1--distinguish the fluidfield by the phase field and delta
+			phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype,X,Y> fluidfield, area_field<areatype,X,Y> areafield,double delta = 0.7){
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						if (isfinite((*this)(i, j)) != 0) {
-							if ((*this)(i, j) > delta) {
-								fluidfield = fluidtype::red;
+						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
+							if (isfinite((*this)(i, j)) != 0) {
+								if ((*this)(i, j) > delta) {
+									fluidfield = fluidtype::red;
+								}
+								else if ((*this)(i, j) < -delta) {
+									fluidfield = fluidtype::blue;
+								}
+								else
+								{
+									fluidfield = fluidtype::interface;
+								}
 							}
-							else if ((*this)(i, j) < -delta) {
-								fluidfield = fluidtype::blue;
+							else {
+								printf("phase_field<X, Y>::determine_fluidtype() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
+								return *this;
 							}
-							else
-							{
-								fluidfield = fluidtype::interface;
-							}
-						}
-						else {
-							printf("phase_field<X, Y>::determine_fluidtype() is called,but ths value of phase_field at (%d,%d) is infinite.", i, j);
-							return *this;
 						}
 					}
 				}
 				return *this;
 			}
 
-			//--2--determine the color type(fluidtype)
-			//phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype, X, Y> fluidfield, double delta = 0.7) {
+			//--2--distinguish the fluidfield by the phase field gradient and delta
+			//phase_field<X, Y>& determine_fluidtype(fluid_field<fluidtype, X, Y> fluidfield, area_field<areatype,X,Y> areafield,double delta_2 = 0.05) {
+			//	
 			//	for (int i = 1; i <= X; i++) {
 			//		for (int j = 1; j <= Y; j++) {
 			//			if (isfinite((*this)(i, j)) != 0) {
-			//				if ((*this)(i, j) > delta) {
-			//					fluidfield = fluidtype::red;
-			//				}
-			//				else if ((*this)(i, j) < -delta) {
-			//					fluidfield = fluidtype::blue;
-			//				}
-			//				else
-			//				{
-			//					fluidfield = fluidtype::interface;
-			//				}
-			//			}
 
+			//			}
 			//		}
 			//	}
+
 			//	return *this;
 			//}
 			
+			//solve for the phase field gradient
+			vector2D_field<X, Y>& gradient(area_field<areatype, X, Y> areafield) {
+				for (int i = 1; i <= X; i++) {
+					for (int j = 1; j <= Y; j++) {
+						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
 
+							phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i - 1, j + 1))
+								+ 1.0 / 3.0 * ((*this)(i + 1, j) - (*this)(i - 1, j)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1) - (*this)(i - 1, j - 1));
+
+							phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i + 1, j - 1))
+								+ 1.0 / 3.0 * ((*this)(i, j + 1) - (*this)(i, j - 1)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1) - (*this)(i - 1, j - 1));
+							
+						}
+					}
+				}
+				return phase_field_gradient;
+			}
+
+			protected:
+				//phase field gradient
+				vector2D_field<X, Y> phase_field_gradient;
 
 		};
 
 	}
+
+	class phase_field_gradient {
+	public:
+		phase_field_gradient() = default;
+		phase_field_gradient(int n) :phase_field_gradient_site(new vector<double,2>[n]){
+
+		}
+		~phase_field_gradient()
+		{
+			delete[]phase_field_gradient_site;
+		}
+		vector<double, 2> *phase_field_gradient_site;
+	};
 
 }
 
