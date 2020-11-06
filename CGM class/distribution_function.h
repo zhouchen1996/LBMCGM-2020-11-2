@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cmath>
 #include <cstdio>
-#include "MRT.h"
 
 //vector template
 namespace distribution_function_template_space {
@@ -16,7 +15,7 @@ namespace distribution_function_template_space {
 
 		vector() :v(new T[N]){
 			for (int i = 0; i < N; i++) {
-				this->operator()(i) = 0;
+				this->operator()(i) = T();
 			}
 		}
 
@@ -46,6 +45,9 @@ namespace distribution_function_template_space {
 
 		template <typename T, int N>
 		friend vector<T, N> operator+(const vector<T, N>& a, const vector<T, N>& b);
+
+		template <typename T, int N>
+		friend vector<T, N> operator-(const vector<T, N>& a, const vector<T, N>& b);
 
 		T& operator()(int i) {
 			//start from 0
@@ -104,6 +106,15 @@ namespace distribution_function_template_space {
 		return temp_vector;
 	}
 
+	// - for vector template 
+	template <typename T, int N>
+	vector<T, N> operator-(const vector<T, N>& a, const vector<T, N>& b) {
+		vector<T, N> temp_vector;
+		for (int i = 0; i < N; i++)
+			temp_vector(i) = a(i) - b(i);
+		return temp_vector;
+	}
+
 }
 
 //matrix template
@@ -113,9 +124,12 @@ namespace distribution_function_template_space {
 	template <typename T, int X,int Y>
 	class matrix {
 	public:
-		matrix() : matrix_p(new T[X * Y]){}
+		matrix() : matrix_p(new T[X * Y]){
+			for (int r = 0; r < X * Y; r++)
+				*(matrix_p + r) = T();
+		}
 
-		matrix(T initial) : matrix_p(new T[X * Y])
+		matrix(const T& initial) : matrix_p(new T[X * Y])
 		{
 			for (int r = 0; r < X * Y; r++)
 				*(matrix_p + r) = initial;
@@ -129,7 +143,21 @@ namespace distribution_function_template_space {
 			}
 		}
 
-		matrix(matrix<T, X, Y>& matrix_) : matrix_p(new T[X * Y]) {
+		matrix(const vector<T,X>&a) : matrix_p(new T[X * Y]) {
+			//Construct a diagonal matrix
+			for (int i = 1; i <= X; i++) {
+				for (int j = 1; j <= Y; j++) {
+					if (i == j) {
+						(*this)(i, j) = a(i - 1);
+					}
+					else {
+						(*this)(i, j) = 0;
+					}
+				}
+			}
+		}
+
+		matrix(const matrix<T, X, Y>& matrix_) : matrix_p(new T[X * Y]) {
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
 					(*this)(i, j) = matrix_(i, j);
@@ -155,7 +183,25 @@ namespace distribution_function_template_space {
 			return *(matrix_p + index);
 		}
 
-		matrix<T, X, Y>& operator=(matrix<T, X, Y>& matrix_) {
+		double& operator()(int i, int j) const {
+			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+			if (i > X) {
+				printf("\nmatrix is called, but the first subscript exceeds the limit: %d > X\n", i);
+			}
+			else if (i < 1) {
+				printf("\nmatrix is called, but the first subscript exceeds the limit: %d < 1\n", i);
+			}
+			else if (j > Y) {
+				printf("\nmatrix is called, but the second subscript exceeds the limit: %d > Y\n", j);
+			}
+			else if (j < 1) {
+				printf("\nmatrix is called, but the second subscript exceeds the limit: %d < 1\n", j);
+			}
+			int index = (i - 1) * Y + (j - 1);
+			return *(matrix_p + index);
+		}
+
+		matrix<T, X, Y>& operator=(const matrix<T, X, Y>& matrix_) {
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
 					(*this)(i, j) = matrix_(i, j);
@@ -164,7 +210,7 @@ namespace distribution_function_template_space {
 			return *this;
 		}
 
-		matrix<T, X, Y>& operator+=(matrix<T, X, Y>& matrix_) {
+		matrix<T, X, Y>& operator+=(const matrix<T, X, Y>& matrix_) {
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
 					(*this)(i, j) += matrix_(i, j);
@@ -173,16 +219,26 @@ namespace distribution_function_template_space {
 			return *this;
 		}
 
-		//vector<T,X> opertor
+		matrix<T, X, Y>& operator-=(const matrix<T, X, Y>& matrix_) {
+			for (int i = 1; i <= X; i++) {
+				for (int j = 1; j <= Y; j++) {
+					(*this)(i, j) -= matrix_(i, j);
+				}
+			}
+			return *this;
+		}
 
 		template<typename T, int X, int Y>
-		friend matrix<T, X, Y> operator+(matrix<T, X, Y>& matrix_1, matrix<T, X, Y>& matrix_2);
+		friend matrix<T, X, Y> operator+(const matrix<T, X, Y>& matrix_1, const matrix<T, X, Y>& matrix_2);
 
 		template<typename T, int X, int Y>
-		friend vector<T, X> operator*(matrix<T, X, Y>& matrix_, vector<T, Y>& vector_);
+		friend matrix<T, X, Y> operator-(const matrix<T, X, Y>& matrix_1, const matrix<T, X, Y>& matrix_2);
+
+		template<typename T, int X, int Y>
+		friend vector<T, X> operator*(const matrix<T, X, Y>& matrix_, const vector<T, Y>& vector_);
 
 		template<typename T, int X, int Y,int K>
-		friend matrix<T, X, Y> operator*(matrix<T, X, K>& matrix_1, matrix<T, K, Y>& matrix_2);
+		friend matrix<T, X, Y> operator*(const matrix<T, X, K>& matrix_1,const matrix<T, K, Y>& matrix_2);
 
 		~matrix() {
 			delete[]matrix_p;
@@ -193,14 +249,21 @@ namespace distribution_function_template_space {
 	};
 
 	template<typename T, int X, int Y>
-	matrix<T, X, Y> operator+(matrix<T, X, Y>& matrix_1, matrix<T, X, Y>& matrix_2) {
+	matrix<T, X, Y> operator+(const matrix<T, X, Y>& matrix_1, const matrix<T, X, Y>& matrix_2) {
 		matrix<T, X, Y> matrix_temp(matrix_1);
 		matrix_temp += matrix_2;
 		return matrix_temp;
 	}
 
 	template<typename T, int X, int Y>
-	vector<T, X> operator*(matrix<T, X, Y>& matrix_, vector<T, Y>& vector_) {
+	matrix<T, X, Y> operator-(const matrix<T, X, Y>& matrix_1, const matrix<T, X, Y>& matrix_2) {
+		matrix<T, X, Y> matrix_temp(matrix_1);
+		matrix_temp -= matrix_2;
+		return matrix_temp;
+	}
+
+	template<typename T, int X, int Y>
+	vector<T, X> operator*(const matrix<T, X, Y>& matrix_, const vector<T, Y>& vector_) {
 		vector<T, X> vector_temp;
 		for (int i = 1; i <= X; i++) {
 			vector_temp(i - 1) = 0;
@@ -212,7 +275,7 @@ namespace distribution_function_template_space {
 	}
 
 	template<typename T, int X, int Y, int K>
-	matrix<T, X, Y> operator*(matrix<T, X, K>& matrix_1, matrix<T, K, Y>& matrix_2) {
+	matrix<T, X, Y> operator*(const matrix<T, X, K>& matrix_1, const matrix<T, K, Y>& matrix_2) {
 		matrix<T, X, Y> matrix_temp;
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
@@ -293,7 +356,7 @@ namespace distribution_function_template_space {
 					printf("\nforce2D_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(vector2D_field<X, Y>::vector2D_field_p + index);
+				return *(this->vector2D_field_p + index);
 			}
 		};
 
@@ -332,7 +395,7 @@ namespace distribution_function_template_space {
 					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d < 1\n",j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(vector2D_field<X, Y>::vector2D_field_p + index);
+				return *(this->vector2D_field_p + index);
 			}
 			
 			//velocity2D_field own function for calculate velocity from distribution function
@@ -490,7 +553,7 @@ namespace distribution_function_template_space {
 					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(scalar_field<X,Y>::scalar_p + index);
+				return *(this->scalar_p + index);
 			}
 
 			//carefully! 女風聞喘
@@ -502,7 +565,7 @@ namespace distribution_function_template_space {
 					return solid_density;
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(scalar_field<X, Y>::scalar_p + index);
+				return *(this->scalar_p + index);
 			}
 
 			density_field<X, Y>& set_virtual_solid_density(double rho_s) {
@@ -579,7 +642,7 @@ namespace distribution_function_template_space {
 					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(scalar_field<X, Y>::scalar_p + index);
+				return *(this->scalar_p + index);
 			}
 
 
@@ -592,7 +655,7 @@ namespace distribution_function_template_space {
 					return solid_phase_field;
 				}
 				int index = (i - 1) * Y + (j - 1);
-				return *(scalar_field<X, Y>::scalar_p + index);
+				return *(this->scalar_p + index);
 			}
 
 			//These member function is for the color gradient model.
@@ -818,7 +881,7 @@ namespace distribution_function_template_space {
 
 	//D2Q9 distribution_functions_template--------------------------
 
-	template <int X,int Y>
+	template <int X, int Y>
 	class distribution_function_template_D2Q9 {
 	public:
 
@@ -859,8 +922,6 @@ namespace distribution_function_template_space {
 			return *(distribution_function_template_p + index);
 		}
 
-		//friend distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2);
-
 		distribution_function_template_D2Q9<X, Y>& blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
 
 		distribution_function_template_D2Q9<X, Y>& streaming();
@@ -877,18 +938,7 @@ namespace distribution_function_template_space {
 		//--1--SRT
 		distribution_function_template_D2Q9<X, Y>& single_phase_collison_SRT();
 		//--2--MRT
-		distribution_function_template_D2Q9<X, Y>& single_phase_collison_MRT() {
-			vector<double, 9> temp_moment, temp_moment_eq, temp_moment_post_collison;
-
-
-			double omega = 1.0 / (3.0 * nu + 0.5);
-			for (int i = 1; i <= X; i++)
-				for (int j = 1; j <= Y; j++)
-					for (int q = 0; q <= 8; q++)
-						(*this)(i, j, q) = (1 - omega) * (*this)(i, j, q) + omega * (*this).equilibrium(i, j, q);
-			return *this;
-		}
-
+		distribution_function_template_D2Q9<X, Y>& single_phase_collison_MRT();
 
 	protected:
 
@@ -897,33 +947,30 @@ namespace distribution_function_template_space {
 		double* distribution_function_template_p;
 
 	public:
-		
+
 		//It works for all distribution functions。
 		static vector2D_field_space::velocity2D_field<X, Y> velocity;
 		static area_field<areatype, X, Y> area;
 		static matrix<double, 9, 9> M;
 		static matrix<double, 9, 9> InM;
 
-
 		//It varies depending on the different distribution functions.
 		double nu;
 		vector<double, 9> S;
 		scalar_field_space::density_field<X, Y> density;
-
 	};
-
 
 	//initialize (constant)
 	//--1--
 	template <int X, int Y>
-	vector<double, 9> distribution_function_template_D2Q9<X,Y>::w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 });
-	
+	vector<double, 9> distribution_function_template_D2Q9<X, Y>::w({ 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 });
+
 	//--2--
 	template <int X, int Y>
 	vector<double, 2> distribution_function_template_D2Q9<X, Y>::c[9]
 	{ vector<double, 2>({0, 0}),vector<double, 2>({1, 0}),vector<double, 2>({0, 1}),
 		vector<double, 2>({-1, 0}),vector<double, 2>({0, -1}),vector<double, 2>({1, 1}),
-		vector<double, 2>({-1, 1}),vector<double, 2>({-1, -1}),vector<double, 2>({1, -1})};
+		vector<double, 2>({-1, 1}),vector<double, 2>({-1, -1}),vector<double, 2>({1, -1}) };
 
 	//--3--
 	template <int X, int Y>
@@ -957,40 +1004,40 @@ namespace distribution_function_template_space {
 	vector2D_field_space::velocity2D_field<X, Y> distribution_function_template_D2Q9<X, Y>::velocity(0.001, 0);
 
 	//--2--
-	template<int X,int Y>
+	template<int X, int Y>
 	area_field<areatype, X, Y> distribution_function_template_D2Q9<X, Y>::area(areatype::F);
 
 	template <int X, int Y>
 	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::streaming() {
-		double* temp_x = new double[X+1];
-		double* temp_y = new double[Y+1];
+		double* temp_x = new double[X + 1];
+		double* temp_y = new double[Y + 1];
 		for (int q = 1; q <= 8; q++) {
 			switch (q)
 			{
 			case 1:
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
-				for (int j = 1; j <= Y; j++) for (int i = X; i >= 2; i--) this->operator()(i, j, q) = this ->operator()(i - 1, j, q); 
-				for (int j = 1; j <= Y; j++) this->operator()(1, j, q) = temp_y[j]; 
+				for (int j = 1; j <= Y; j++) for (int i = X; i >= 2; i--) this->operator()(i, j, q) = this ->operator()(i - 1, j, q);
+				for (int j = 1; j <= Y; j++) this->operator()(1, j, q) = temp_y[j];
 				break;
 			case 2:
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
-				for (int i = 1; i <= X; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i, j - 1, q); 
-				for (int i = 1; i <= X; i++) this->operator()(i, 1, q) = temp_x[i]; 
+				for (int i = 1; i <= X; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i, j - 1, q);
+				for (int i = 1; i <= X; i++) this->operator()(i, 1, q) = temp_x[i];
 				break;
 			case 3:
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
-				for (int j = 1; j <= Y; j++) for (int i = 1; i <= X - 1; i++)  this->operator()(i, j, q) = this ->operator()(i + 1, j, q); 
-				for (int j = 1; j <= Y; j++) this->operator()(X, j, q) = temp_y[j]; 
+				for (int j = 1; j <= Y; j++) for (int i = 1; i <= X - 1; i++)  this->operator()(i, j, q) = this ->operator()(i + 1, j, q);
+				for (int j = 1; j <= Y; j++) this->operator()(X, j, q) = temp_y[j];
 				break;
 			case 4:
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
-				for (int i = 1; i <= X; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i, j + 1, q); 
-				for (int i = 1; i <= X; i++) this->operator()(i, Y, q) = temp_x[i]; 
+				for (int i = 1; i <= X; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i, j + 1, q);
+				for (int i = 1; i <= X; i++) this->operator()(i, Y, q) = temp_x[i];
 				break;
 			case 5:
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
-				for (int i = X; i >= 2; i--) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i - 1, j - 1, q); 
+				for (int i = X; i >= 2; i--) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i - 1, j - 1, q);
 				for (int j = 2; j <= Y; j++) this->operator()(1, j, q) = temp_y[j - 1];
 				for (int i = 2; i <= X; i++) this->operator()(i, 1, q) = temp_x[i - 1];
 				this->operator()(1, 1, q) = temp_x[X];
@@ -998,7 +1045,7 @@ namespace distribution_function_template_space {
 			case 6:
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, Y, q);
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
-				for (int i = 1; i <= X - 1; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i + 1, j - 1, q); 
+				for (int i = 1; i <= X - 1; i++) for (int j = Y; j >= 2; j--) this->operator()(i, j, q) = this ->operator()(i + 1, j - 1, q);
 				for (int i = 1; i <= X - 1; i++) this->operator()(i, 1, q) = temp_x[i + 1];
 				for (int j = 2; j <= Y; j++) this->operator()(X, j, q) = temp_y[j - 1];
 				this->operator()(X, 1, q) = temp_x[1];
@@ -1006,7 +1053,7 @@ namespace distribution_function_template_space {
 			case 7:
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(1, j, q);
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
-				for (int i = 1; i <= X - 1; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i + 1, j + 1, q); 
+				for (int i = 1; i <= X - 1; i++) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i + 1, j + 1, q);
 				for (int j = 1; j <= Y - 1; j++) this->operator()(X, j, q) = temp_y[j + 1];
 				for (int i = 1; i <= X - 1; i++) this->operator()(i, Y, q) = temp_x[i + 1];
 				this->operator()(X, Y, q) = temp_x[1];
@@ -1014,7 +1061,7 @@ namespace distribution_function_template_space {
 			case 8:
 				for (int j = 1; j <= Y; j++) temp_y[j] = this->operator()(X, j, q);
 				for (int i = 1; i <= X; i++) temp_x[i] = this->operator()(i, 1, q);
-				for (int i = X; i >= 2; i--) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i - 1, j + 1, q); 
+				for (int i = X; i >= 2; i--) for (int j = 1; j <= Y - 1; j++) this->operator()(i, j, q) = this ->operator()(i - 1, j + 1, q);
 				for (int j = 1; j <= Y - 1; j++) this->operator()(1, j, q) = temp_y[j + 1];
 				for (int i = 2; i <= X; i++) this->operator()(i, Y, q) = temp_x[i - 1];
 				this->operator()(1, Y, q) = temp_x[X];
@@ -1028,12 +1075,8 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
-	//template <int X,int Y>
-	//distribution_function_template_D2Q9<X, Y> operator+(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
-	//}
-
-	template <int X,int Y>
-	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X,Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
+	template <int X, int Y>
+	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
 		for (int q = 0; q <= 8; q++)
 			for (int i = 1; i <= X; i++)
 				for (int j = 1; j <= Y; j++)
@@ -1044,7 +1087,7 @@ namespace distribution_function_template_space {
 	//several equilibrium functions
 	//--1--
 	template <int X, int Y>
-	inline distribution_function_template_D2Q9<X,Y>& distribution_function_template_D2Q9<X, Y>::equilibrium( vector2D_field_space::velocity2D_field<X, Y>& velocity,
+	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::equilibrium(vector2D_field_space::velocity2D_field<X, Y>& velocity,
 		scalar_field_space::scalar_field<X, Y>& rho) {
 
 		double uu = 0, cu = 0;
@@ -1079,7 +1122,7 @@ namespace distribution_function_template_space {
 	}
 	//--3--
 	template <int X, int Y>
-	inline double distribution_function_template_D2Q9<X, Y>::equilibrium(int i,int j,int q) {
+	inline double distribution_function_template_D2Q9<X, Y>::equilibrium(int i, int j, int q) {
 		double uu = velocity(i, j) * velocity(i, j), cu = velocity(i, j) * c[q];
 		return density(i, j) * w(q) * (1 + 3.0 * cu + 4.5 * cu * cu - 1.5 * uu);
 	}
@@ -1102,7 +1145,7 @@ namespace distribution_function_template_space {
 							return false;
 						}
 					}
-					else{ 
+					else {
 						printf("\nThe value of distribution function (%d,%d,%d) is infinite.\n", i, j, q);
 						return false;
 					}
@@ -1125,11 +1168,37 @@ namespace distribution_function_template_space {
 	}
 
 	//MRT
-	//template <int X, int Y>
-	//distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>:: single_phase_collison(double omega= 1)) {
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::single_phase_collison_MRT() {
+		vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
+		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(S);
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
 
-	//	return *this;
-	//}
+				for (int q = 0; q <= 8; q++)
+					f_vector_pre_collison(q) = (*this)(i, j, q);
+				
+				for (int q = 0; q <= 8; q++)
+					f_vector_eq(q) = (*this).equilibrium(i, j, q);
+
+				//Convert to the moment space
+				moment_pre_collison = M * f_vector_pre_collison;
+
+				//Calculate the temporary equilibrium moment
+				moment_eq = M * f_vector_eq;
+
+				//Collision in moment space
+				moment_post_collison = (I - Matrix_S) * moment_pre_collison + Matrix_S * moment_eq;
+
+				//Back to particle space
+				f_vector_post_collison = InM * moment_post_collison;
+
+				for (int q = 0; q <= 8; q++)
+					(*this)(i, j, q) = f_vector_post_collison(q);
+			}
+		}		
+		return *this;
+	}
 
 }
 
@@ -1140,23 +1209,52 @@ namespace distribution_function_template_space {
 	class distribution_function_CGM_D2Q9 : public distribution_function_template_D2Q9<X,Y> {
 	public:
 
-		distribution_function_CGM_D2Q9(double rho_initial = 1) :distribution_function_template_D2Q9<X,Y>(rho_initial){}
+		distribution_function_CGM_D2Q9(double rho_initial = 1,double nu_ = 1.0 / 6.0) :distribution_function_template_D2Q9<X,Y>(rho_initial, nu_){}
+
+		double& operator()(int i, int j, int q) {
+			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
+			if (i > X) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the first subscript exceeds the limit: %d > X\n", i);
+			}
+			else if (i < 1) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the first subscript exceeds the limit: %d < 1\n", i);
+			}
+			else if (j > Y) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the second subscript exceeds the limit: %d > Y\n", j);
+			}
+			else if (j < 1) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the second subscript exceeds the limit: %d < 1\n", j);
+			}
+			else if (q < 0) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the third subscript exceeds the limit: %d < 0\n", q);
+			}
+			else if (q > 8) {
+				printf("\ndistribution_function_CGM_D2Q9 is called, but the third subscript exceeds the limit: %d > 8\n", q);
+			}
+			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
+			return *(this->distribution_function_template_p + index);
+		}
+
+		//--1--SRT
+		distribution_function_CGM_D2Q9<X, Y>& single_phase_collison_SRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
+		//--2--MRT
+		distribution_function_CGM_D2Q9<X, Y>& single_phase_collison_MRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
 
 		//for color gradient model(CGM)
 		static scalar_field_space::phase_field<X, Y> phaseField;
 		static fluid_field<fluidtype, X, Y> fluidcolor;
 
-		static double nu(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
+		static double nu_is(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
 			return (f_r.density(i, j) / rho_r_reference + f_b.density(i, j) / rho_b_reference) / (f_r.density(i, j) / rho_r_reference / f_r.nu + f_b.density(i, j) / rho_b_reference / f_b.nu);
 		}
 
-		static double omega(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
-			return 2.0 / (6.0 * distribution_function_CGM_D2Q9::nu(i, j, f_r, f_b) + 1.0);
+		static double omega_is(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
+			return 2.0 / (6.0 * distribution_function_CGM_D2Q9<X, Y>::nu_is(i, j, f_r, f_b) + 1.0);
 		}
 
-		static distribution_function_template_D2Q9<X, Y>& perturbation(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+		static distribution_function_CGM_D2Q9<X, Y>& perturbation(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
 
-		static distribution_function_template_D2Q9<X, Y>& recolor(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+		static distribution_function_CGM_D2Q9<X, Y>& recolor(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
 
 	};
 
@@ -1170,8 +1268,56 @@ namespace distribution_function_template_space {
 
 }
 
-//1.perturbation 2.recolor : the member functions OF distribution function tempalte class
+//1.collision 2.perturbation 3.recolor : the member functions OF distribution function tempalte class
 namespace distribution_function_template_space {
+
+	//SRT
+	template <int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::single_phase_collison_SRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b) {
+		for (int i = 1; i <= X; i++)
+			for (int j = 1; j <= Y; j++)
+				for (int q = 0; q <= 8; q++)
+					(*this)(i, j, q) = (1 - omega_is(i,j,f_r,f_b)) * (*this)(i, j, q) + omega_is(i, j, f_r, f_b) * (*this).equilibrium(i, j, q);
+		return *this;
+	}
+
+	//MRT
+	template <int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::single_phase_collison_MRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b) {
+		vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
+		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(this->S);
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				Matrix_S(8, 8) = Matrix_S(9, 9) = omega_is(i, j, f_r, f_b);
+				for (int q = 0; q <= 8; q++)
+					f_vector_pre_collison(q) = (*this)(i, j, q);
+
+				for (int q = 0; q <= 8; q++)
+					f_vector_eq(q) = (*this).equilibrium(i, j, q);
+
+				//Convert to the moment space
+				moment_pre_collison = this->M * f_vector_pre_collison;
+
+				//Calculate the temporary equilibrium moment
+				moment_eq = this->M * f_vector_eq;
+
+				//Collision in moment space
+				moment_post_collison = (I - Matrix_S) * moment_pre_collison + Matrix_S * moment_eq;
+
+				//Back to particle space
+				f_vector_post_collison = this->InM * moment_post_collison;
+
+				for (int q = 0; q <= 8; q++)
+					(*this)(i, j, q) = f_vector_post_collison(q);
+			}
+		}
+		return *this;
+	}
+
+	//perturbation
+
+
+
 
 }
 
