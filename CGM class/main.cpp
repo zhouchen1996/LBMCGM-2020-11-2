@@ -35,7 +35,7 @@ int main() {
 		cout << endl;
 	}
 	
-	
+	f.single_phase_collison_SRT();
 	
 	for (int i = 1; i <= X; i++) {
 		for (int j = 1; j <= Y; j++) {
@@ -55,6 +55,22 @@ int main() {
 	cout << int(area2(1, 1)) << endl;
 
 	f.velocity.calculate(f,density);
+
+	matrix<double, X, Y> m(3);
+	for (int i = 1; i <= X; i++) {
+		for (int j = 1; j <= Y; j++) {
+			printf("%5.2f", m(i, j));
+		}
+		cout << endl;
+	}
+	
+	using dif = distribution_function_template_D2Q9<X, Y>;
+	for (int i = 1; i <= 9; i++) {
+		for (int j = 1; j <= 9; j++) {
+			printf("%8.4f", (dif::InM*dif::M)(i,j));
+		}
+		cout << endl;
+	}
 
 	return 0;
 }
