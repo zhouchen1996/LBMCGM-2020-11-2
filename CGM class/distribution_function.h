@@ -925,8 +925,7 @@ namespace distribution_function_template_space {
 			return *(distribution_function_template_p + index);
 		}
 
-		distribution_function_template_D2Q9<X, Y>& blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2); //This function is used in the color gradient model to get the total distribution function.
-
+		
 		distribution_function_template_D2Q9<X, Y>& streaming();
 
 		//Solve for the equilibrium distribution function.
@@ -1078,14 +1077,6 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
-	template <int X, int Y>
-	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::blend(distribution_function_template_D2Q9<X, Y>& f1, distribution_function_template_D2Q9<X, Y>& f2) {
-		for (int q = 0; q <= 8; q++)
-			for (int i = 1; i <= X; i++)
-				for (int j = 1; j <= Y; j++)
-					(*this)(i, j, q) = f1(i, j, q) + f2(i, j, q);
-		return *this;
-	}
 
 	//several equilibrium functions
 	//--1--
@@ -1269,6 +1260,11 @@ namespace distribution_function_template_space {
 		//This function is called by total distribution function.
 		distribution_function_CGM_D2Q9<X, Y>& recolor(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b,double beta);
 		
+		//This function is called by total distribution function.
+		//This function is used in the color gradient model to get the total distribution function.
+		distribution_function_CGM_D2Q9<X, Y>& blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
+
+
 	};
 
 	//initialize
@@ -1281,6 +1277,15 @@ namespace distribution_function_template_space {
 	//--3--
 	template<int X, int Y>
 	vector<double, 9> distribution_function_CGM_D2Q9<X, Y>::B({ -4.0 / 27.0,2.0 / 27.0,2.0 / 27.0, 2.0 / 27.0, 2.0 / 27.0, 5.0 / 108.0, 5.0 / 108.0 , 5.0 / 108.0 , 5.0 / 108.0 });
+
+	template <int X, int Y>
+	inline distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b) {
+			for (int i = 1; i <= X; i++)
+				for (int j = 1; j <= Y; j++)
+					for (int q = 0; q <= 8; q++)
+						(*this)(i, j, q) = f_r(i, j, q) + f_b(i, j, q);
+		return *this;
+	}
 
 }
 
@@ -1338,7 +1343,9 @@ namespace distribution_function_template_space {
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
 				if (fluidcolor(i,j) == fluidtype::interface) {
+
 					FF = phaseField.gradient(i, j) * phaseField.gradient(i, j);
+
 					for (int q = 0; q <= 8; q++) {
 						Fc = phaseField.gradient(i, j) * c[q];
 						(*this)(i, j, q) += A / 2.0 * sqrt(FF) * (w(q) * Fc * Fc / FF - B(q));
