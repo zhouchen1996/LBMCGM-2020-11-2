@@ -765,7 +765,7 @@ namespace distribution_function_template_space {
 			}
 			
 			//solve for the phase field gradient( use the special functor (int i, int j, int=0) )
-			vector2D_field<X, Y>& gradient(area_field<areatype, X, Y>& areafield) {
+			phase_field<X, Y>& calculate_phase_field_gradient(area_field<areatype, X, Y>& areafield) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
 						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
@@ -784,14 +784,17 @@ namespace distribution_function_template_space {
 						}
 					}
 				}
-				return phase_field_gradient;
+				return *this;
+			}
+
+			//visit phase_field_gradient
+			vector<double, 2>& gradient(int i, int j) {
+				return phase_field_gradient(i, j);
 			}
 
 			protected:
-
 				double solid_phase_field;
 				vector2D_field<X, Y> phase_field_gradient;
-
 		};
 
 	}
@@ -1211,6 +1214,12 @@ namespace distribution_function_template_space {
 
 		distribution_function_CGM_D2Q9(double rho_initial = 1,double nu_ = 1.0 / 6.0) :distribution_function_template_D2Q9<X,Y>(rho_initial, nu_){}
 
+		using distribution_function_template_D2Q9<X, Y>::c;
+		using distribution_function_template_D2Q9<X, Y>::w;
+		using distribution_function_template_D2Q9<X, Y>::M;
+		using distribution_function_template_D2Q9<X, Y>::InM;
+		using distribution_function_template_D2Q9<X, Y>::S;
+
 		double& operator()(int i, int j, int q) {
 			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
 			if (i > X) {
@@ -1243,6 +1252,7 @@ namespace distribution_function_template_space {
 		//for color gradient model(CGM)
 		static scalar_field_space::phase_field<X, Y> phaseField;
 		static fluid_field<fluidtype, X, Y> fluidcolor;
+		static vector<double, 9> B;
 
 		static double nu_is(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
 			return (f_r.density(i, j) / rho_r_reference + f_b.density(i, j) / rho_b_reference) / (f_r.density(i, j) / rho_r_reference / f_r.nu + f_b.density(i, j) / rho_b_reference / f_b.nu);
@@ -1252,10 +1262,13 @@ namespace distribution_function_template_space {
 			return 2.0 / (6.0 * distribution_function_CGM_D2Q9<X, Y>::nu_is(i, j, f_r, f_b) + 1.0);
 		}
 
-		static distribution_function_CGM_D2Q9<X, Y>& perturbation(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+		distribution_function_CGM_D2Q9<X, Y>& perturbationLui2012(double A);
 
-		static distribution_function_CGM_D2Q9<X, Y>& recolor(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+		//void perturbationLui2017();
 
+		//This function is called by total distribution function.
+		distribution_function_CGM_D2Q9<X, Y>& recolor(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b,double beta);
+		
 	};
 
 	//initialize
@@ -1265,6 +1278,9 @@ namespace distribution_function_template_space {
 	//--2--
 	template<int X, int Y>
 	fluid_field<fluidtype, X, Y> distribution_function_CGM_D2Q9<X, Y>::fluidcolor(fluidtype::blue);
+	//--3--
+	template<int X, int Y>
+	vector<double, 9> distribution_function_CGM_D2Q9<X, Y>::B({ -4.0 / 27.0,2.0 / 27.0,2.0 / 27.0, 2.0 / 27.0, 2.0 / 27.0, 5.0 / 108.0, 5.0 / 108.0 , 5.0 / 108.0 , 5.0 / 108.0 });
 
 }
 
@@ -1285,7 +1301,7 @@ namespace distribution_function_template_space {
 	template <int X, int Y>
 	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::single_phase_collison_MRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b) {
 		vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
-		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(this->S);
+		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(S);
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
 				Matrix_S(8, 8) = Matrix_S(9, 9) = omega_is(i, j, f_r, f_b);
@@ -1296,16 +1312,16 @@ namespace distribution_function_template_space {
 					f_vector_eq(q) = (*this).equilibrium(i, j, q);
 
 				//Convert to the moment space
-				moment_pre_collison = this->M * f_vector_pre_collison;
+				moment_pre_collison = M * f_vector_pre_collison;
 
 				//Calculate the temporary equilibrium moment
-				moment_eq = this->M * f_vector_eq;
+				moment_eq = M * f_vector_eq;
 
 				//Collision in moment space
 				moment_post_collison = (I - Matrix_S) * moment_pre_collison + Matrix_S * moment_eq;
 
 				//Back to particle space
-				f_vector_post_collison = this->InM * moment_post_collison;
+				f_vector_post_collison = InM * moment_post_collison;
 
 				for (int q = 0; q <= 8; q++)
 					(*this)(i, j, q) = f_vector_post_collison(q);
@@ -1315,9 +1331,49 @@ namespace distribution_function_template_space {
 	}
 
 	//perturbation
+	//--1--
+	template <int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::perturbationLui2012(double A) {
+		double FF = 0, Fc = 0;
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (fluidcolor(i,j) == fluidtype::interface) {
+					FF = phaseField.gradient(i, j) * phaseField.gradient(i, j);
+					for (int q = 0; q <= 8; q++) {
+						Fc = phaseField.gradient(i, j) * c[q];
+						(*this)(i, j, q) += A / 2.0 * sqrt(FF) * (w(q) * Fc * Fc / FF - B(q));
+					}
+				}
+			}
+		}
+		return *this;
+	}
 
+	//recolor
+	template <int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::recolor(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double beta){
+		double FF = 0, Fc = 0, rho, rho_r, rho_b;
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (fluidcolor(i, j) == fluidtype::interface) {
 
+					FF = phaseField.gradient(i, j) * phaseField.gradient(i, j);
+					rho = this->density(i, j);
+					rho_r = f_r.density(i, j);
+					rho_b = f_b.density(i, j);
 
+					for (int q = 0; q <= 8; q++) {
+						Fc = phaseField.gradient(i, j) * c[q];
+						f_r(i, j, q) = rho_r / rho * (*this)(i, j, q) + beta * w(q) * rho_r * rho_b / rho *
+							(c[q] * phaseField.gradient(i, j)) / sqrt((c[q] * c[q]) * (phaseField.gradient(i, j) * phaseField.gradient(i, j)));
+						f_b(i, j, q) = rho_b / rho * (*this)(i, j, q) - beta * w(q) * rho_r * rho_b / rho *
+							(c[q] * phaseField.gradient(i, j)) / sqrt((c[q] * c[q]) * (phaseField.gradient(i, j) * phaseField.gradient(i, j)));
+					}
+				}
+			}
+		}
+		return *this;
+	}
 
 }
 
