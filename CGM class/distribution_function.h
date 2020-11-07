@@ -1336,7 +1336,6 @@ namespace distribution_function_template_space {
 	}
 
 	//perturbation
-	//--1--
 	template <int X, int Y>
 	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::perturbationLui2012(double A) {
 		double FF = 0, Fc = 0;
