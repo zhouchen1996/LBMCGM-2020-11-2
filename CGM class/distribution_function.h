@@ -474,9 +474,9 @@ namespace distribution_function_template_space {
 		template<int X,int Y>
 		class scalar_field {
 		public:
-			scalar_field(double scalar_initial = 0) : scalar_p(new double[X*Y])
+			scalar_field(double scalar_initial = 0) : scalar_p(new double[(X + 2) * (Y + 2)])
 			{
-				for (int r = 0; r < X * Y; r++)
+				for (int r = 0; r < (X + 2) * (Y + 2); r++)
 					*(scalar_p + r) = scalar_initial;
 			}
 
@@ -485,20 +485,20 @@ namespace distribution_function_template_space {
 			}
 
 			double& operator()(int i,int j) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				// (i,j) <-- [i][j] <-- i*(Y+2) + j
+				if (i > X+1) {
+					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
 				}
-				else if (i < 1) {
-					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				else if (i < 0) {
+					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
 				}
-				else if (j > Y) {
-					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				else if (j > Y+1) {
+					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
 				}
-				else if (j < 1) {
-					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				else if (j < 0) {
+					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
 				}
-				int index = (i - 1) * Y + (j - 1);
+				int index = i * (Y + 2) + j;
 				return *(scalar_p + index);
 			}
 
@@ -530,7 +530,7 @@ namespace distribution_function_template_space {
 				
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						if (areafield(i, j) == areatype::SL && areafield(i, j) == areatype::SB) {
+						if (areafield(i, j) == areatype::SL || areafield(i, j) == areatype::SB) {
 							(*this)(i, j) = solid_density;
 						}
 					}
@@ -538,21 +538,21 @@ namespace distribution_function_template_space {
 
 			}
 
-			double& operator()(int i, int j){
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+			double& operator()(int i, int j) {
+				// (i,j) <-- [i][j] <-- i*(Y+2) + j
+				if (i > X + 1) {
+					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
 				}
-				else if (i < 1) {
-					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				else if (i < 0) {
+					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
 				}
-				else if (j > Y) {
-					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				else if (j > Y + 1) {
+					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
 				}
-				else if (j < 1) {
-					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				else if (j < 0) {
+					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
 				}
-				int index = (i - 1) * Y + (j - 1);
+				int index = i * (Y + 2) + j;
 				return *(this->scalar_p + index);
 			}
 
@@ -560,11 +560,11 @@ namespace distribution_function_template_space {
 			//for calculating phase field gradient
 			//When the index may exceeds the limit,the density is virtual solid density(a functor convenient for setting wettability conditions).
 			double operator()(int i, int j, int) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				// (i,j) <-- [i][j] <-- i*(Y+2) + j
 				if (i > X || i < 1 || j > Y || j < 1) {
 					return solid_density;
 				}
-				int index = (i - 1) * Y + (j - 1);
+				int index = i * (Y + 2) + j;
 				return *(this->scalar_p + index);
 			}
 
@@ -628,33 +628,32 @@ namespace distribution_function_template_space {
 			phase_field(double phase_initial = 0,double solid_phase_field_ = 0.0) :scalar_field<X, Y>(phase_initial),solid_phase_field(solid_phase_field_) {}
 
 			double& operator()(int i, int j) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X\n", i);
+				// (i,j) <-- [i][j] <-- i*(Y+2) + j
+				if (i > X+1) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
 				}
-				else if (i < 1) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
+				else if (i < 0) {
+					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
 				}
-				else if (j > Y) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
+				else if (j > Y+1) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
 				}
-				else if (j < 1) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
+				else if (j < 0) {
+					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
 				}
-				int index = (i - 1) * Y + (j - 1);
+				int index = i * (Y + 2) + j;
 				return *(this->scalar_p + index);
 			}
-
 
 			//carefully! 谨慎使用
 			//for calculating phase field gradient
 			//When calculating the gradient, the index may exceeds the limit(a functor convenient for setting wettability conditions).
 			double operator()(int i, int j,int) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
+				// (i,j) <-- [i][j] <-- i*(Y+2) + j
 				if (i > X || i < 1 || j > Y || j < 1) {
 					return solid_phase_field;
 				}
-				int index = (i - 1) * Y + (j - 1);
+				int index = i * (Y + 2) + j;
 				return *(this->scalar_p + index);
 			}
 
@@ -735,7 +734,7 @@ namespace distribution_function_template_space {
 				return *this;
 			}
 
-			//--2--distinguish the fluidfield by the phase field GRADIENT and delta
+			//--2--distinguish the fluidfield by the phase field GRADIENT and delta_2
 			phase_field<X, Y>& find_interface_by_gradient(fluid_field<fluidtype, X, Y>& fluidfield, area_field<areatype,X,Y>& areafield,double delta_2 = 0.05) {
 				
 				for (int i = 1; i <= X; i++) {
@@ -764,11 +763,13 @@ namespace distribution_function_template_space {
 				return *this;
 			}
 			
+			//this is traditional wetting boundary condtion ,set virtual solid density or virtual solid phase field
 			//solve for the phase field gradient( use the special functor (int i, int j, int=0) )
+			//--1--
 			phase_field<X, Y>& calculate_phase_field_gradient(area_field<areatype, X, Y>& areafield) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						if (areafield(i, j) != areatype::SL && areafield(i, j) != areatype::SB) {
+						if (areafield(i, j) == areatype::FL || areafield(i, j) == areatype::FB) {
 
 							//phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i - 1, j + 1))
 							//	+ 1.0 / 3.0 * ((*this)(i + 1, j) - (*this)(i - 1, j)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1) - (*this)(i - 1, j - 1));
@@ -780,6 +781,25 @@ namespace distribution_function_template_space {
 							
 							phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1, 0) - (*this)(i + 1, j - 1, 0))
 								+ 1.0 / 3.0 * ((*this)(i, j + 1, 0) - (*this)(i, j - 1, 0)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1, 0) - (*this)(i - 1, j - 1, 0));
+
+						}
+					}
+				}
+				return *this;
+			}
+
+			//this is new wetting boundary condtion ,first set phase field gradient at FL,then set FB's phase field gradient
+			//solve for the phase field gradient
+			//--2--
+			phase_field<X, Y>& calculate_phase_field_gradient_new(area_field<areatype, X, Y>& areafield) {
+				for (int i = 2; i <= X-1; i++) {
+					for (int j = 2; j <= Y-1; j++) {
+						if (areafield(i, j) == areatype::FL) {
+
+							phase_field_gradient(i, j)(0) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i - 1, j + 1))
+								+ 1.0 / 3.0 * ((*this)(i + 1, j) - (*this)(i - 1, j)) + 1.0 / 12.0 * ((*this)(i + 1, j - 1) - (*this)(i - 1, j - 1));
+							phase_field_gradient(i, j)(1) = 1.0 / 12.0 * ((*this)(i + 1, j + 1) - (*this)(i + 1, j - 1))
+								+ 1.0 / 3.0 * ((*this)(i, j + 1) - (*this)(i, j - 1)) + 1.0 / 12.0 * ((*this)(i - 1, j + 1) - (*this)(i - 1, j - 1));
 
 						}
 					}
@@ -804,7 +824,7 @@ namespace distribution_function_template_space {
 //define classes associated with area type and fluid type that represents different areas
 namespace distribution_function_template_space {
 
-	enum class areatype{S,F,SB,SL,FB,FL,inlet,outlet,inlet_S,outlet_S};
+	enum class areatype{S,F,SB,SL,FB,FL,inlet,INLET,outlet,OUTLET,FB_inlet,FB_outlet};
 	enum class fluidtype{red,blue,interface};
 
 	template<typename T,int X, int Y>
@@ -926,6 +946,7 @@ namespace distribution_function_template_space {
 		}
 
 		//use carefully!
+		//for boundary condition
 		double& operator()(int i, int j, int q,int) {
 			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
 			if (i == X + 1) {
@@ -970,6 +991,19 @@ namespace distribution_function_template_space {
 		//boundary condition : bounce back
 		distribution_function_template_D2Q9<X, Y>& bounce_back_halfway();
 
+		//boundary condition : velocity inlet
+		distribution_function_template_D2Q9<X, Y>& inlet_velocity(vector<double, 2> u_inlet);
+
+		//boundary condition : pressure inlet
+		//distribution_function_template_D2Q9<X, Y>& inlet_pressure(vector<double, 2> u_inlet);
+
+		//boundary condition : outlflow oulet (Neumann boundary condition)
+		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
+		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_Neumann();
+
+		//boundary condition : outlflow oulet (convective boundary condition)
+		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
+		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_convective();
 
 	protected:
 
@@ -1227,7 +1261,7 @@ namespace distribution_function_template_space {
 	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::bounce_back_halfway() {
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
-				if (area(i,j) == areatype::FB) {
+				if (area(i,j) == areatype::FB || area(i, j) == areatype::FB_inlet) {
 					
 					if (area(i - 1,j) == areatype::SB) {
 						(*this)(i, j, 1, 0) = (*this)(i - 1, j, 3, 0);
@@ -1260,6 +1294,99 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::inlet_velocity(vector<double,2> u_inlet) {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i, j) == areatype::inlet || area(i, j) == areatype::FB_inlet) {
+
+					if (area(i - 1, j) == areatype::INLET) {
+						(*this)(i, j, 1, 0) = (*this)(i - 1, j, 3, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[3] * u_inlet);
+					}
+					if (area(i, j - 1) == areatype::INLET) {
+						(*this)(i, j, 2, 0) = (*this)(i, j - 1, 4, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[4] * u_inlet);
+					}
+					if (area(i + 1, j) == areatype::INLET) {
+						(*this)(i, j, 3, 0) = (*this)(i + 1, j, 1, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[1] * u_inlet);
+					}
+					if (area(i, j + 1) == areatype::INLET) {
+						(*this)(i, j, 4, 0) = (*this)(i, j + 1, 2, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[2] * u_inlet);
+					}
+					if (area(i - 1, j - 1) == areatype::INLET) {
+						(*this)(i, j, 5, 0) = (*this)(i - 1, j - 1, 7, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[7] * u_inlet);
+					}
+					if (area(i + 1, j - 1) == areatype::INLET) {
+						(*this)(i, j, 6, 0) = (*this)(i + 1, j - 1, 8, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[8] * u_inlet);
+					}
+					if (area(i + 1, j + 1) == areatype::INLET) {
+						(*this)(i, j, 7, 0) = (*this)(i + 1, j + 1, 5, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[5] * u_inlet);
+					}
+					if (area(i - 1, j + 1) == areatype::INLET) {
+						(*this)(i, j, 8, 0) = (*this)(i - 1, j + 1, 6, 0) - 2.0 / 3.0 * (*this).density(i, j) * (c[6] * u_inlet);
+					}
+
+				}
+			}
+		}
+
+		return *this;
+	}
+
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::oulet_outlflow_Neumann() {
+
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i, j) == areatype::outlet || area(i, j) == areatype::FB_outlet) {
+
+					if (area(i - 1, j) == areatype::OUTLET) {
+						(*this)(i, j, 1) = (*this)(i + 1, j, 1);
+					}
+					if (area(i, j - 1) == areatype::OUTLET) {
+						(*this)(i, j, 2) = (*this)(i, j + 1, 2);
+					}
+					if (area(i + 1, j) == areatype::OUTLET) {
+						(*this)(i, j, 3) = (*this)(i - 1, j, 3);
+					}
+					if (area(i, j + 1) == areatype::OUTLET) {
+						(*this)(i, j, 4) = (*this)(i, j - 1, 4);
+					}
+					if (area(i - 1, j - 1) == areatype::OUTLET) {
+						(*this)(i, j, 5) = (*this)(i + 1, j + 1, 5);
+					}
+					if (area(i + 1, j - 1) == areatype::OUTLET) {
+						(*this)(i, j, 6) = (*this)(i - 1, j + 1, 6);
+					}
+					if (area(i + 1, j + 1) == areatype::OUTLET) {
+						(*this)(i, j, 7) = (*this)(i - 1, j - 1, 7);
+					}
+					if (area(i - 1, j + 1) == areatype::OUTLET) {
+						(*this)(i, j, 8) = (*this)(i + 1, j - 1, 8);
+					}
+
+				}
+			}
+		}
+
+		return *this;
+	}
+
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::oulet_outlflow_convective() {
+
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i, j) == areatype::outlet || area(i, j) == areatype::FB_outlet) {
+
+					//==========================================================================
+
+				}
+			}
+		}
+
+		return *this;
+	}
+
 }
 
 //A distribution function class template for CGM.
@@ -1276,6 +1403,7 @@ namespace distribution_function_template_space {
 		using distribution_function_template_D2Q9<X, Y>::M;
 		using distribution_function_template_D2Q9<X, Y>::InM;
 		using distribution_function_template_D2Q9<X, Y>::S;
+		using distribution_function_template_D2Q9<X, Y>::area;
 
 		double& operator()(int i, int j, int q) {
 			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
@@ -1307,9 +1435,12 @@ namespace distribution_function_template_space {
 		distribution_function_CGM_D2Q9<X, Y>& single_phase_collison_MRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
 
 		//for color gradient model(CGM)
+		static vector2D_field<X, Y> ns; //----------====================-----------------=================--------------------------==========
 		static scalar_field_space::phase_field<X, Y> phaseField;
 		static fluid_field<fluidtype, X, Y> fluidcolor;
 		static vector<double, 9> B;
+		static double contactAngle;
+		static vector<double, 2> n_contact_angle;
 
 		static double nu_is(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
 			return (f_r.density(i, j) / rho_r_reference + f_b.density(i, j) / rho_b_reference) / (f_r.density(i, j) / rho_r_reference / f_r.nu + f_b.density(i, j) / rho_b_reference / f_b.nu);
@@ -1319,7 +1450,9 @@ namespace distribution_function_template_space {
 			return 2.0 / (6.0 * distribution_function_CGM_D2Q9<X, Y>::nu_is(i, j, f_r, f_b) + 1.0);
 		}
 
-		distribution_function_CGM_D2Q9<X, Y>& perturbationLui2012(double A);
+		distribution_function_CGM_D2Q9<X, Y>& wetting_boundary(double contact_angle, double delta_2 = 0.05);
+
+		distribution_function_CGM_D2Q9<X, Y>& perturbationLiu2012(double A);
 
 		//void perturbationLui2017();
 
@@ -1329,7 +1462,6 @@ namespace distribution_function_template_space {
 		//This function is called by total distribution function.
 		//This function is used in the color gradient model to get the total distribution function.
 		distribution_function_CGM_D2Q9<X, Y>& blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
-
 
 	};
 
@@ -1343,6 +1475,16 @@ namespace distribution_function_template_space {
 	//--3--
 	template<int X, int Y>
 	vector<double, 9> distribution_function_CGM_D2Q9<X, Y>::B({ -4.0 / 27.0,2.0 / 27.0,2.0 / 27.0, 2.0 / 27.0, 2.0 / 27.0, 5.0 / 108.0, 5.0 / 108.0 , 5.0 / 108.0 , 5.0 / 108.0 });
+	//--4--
+	template<int X, int Y>
+	vector2D_field<X, Y> distribution_function_CGM_D2Q9<X, Y>::ns;
+	//--5--
+	template<int X, int Y>
+	double distribution_function_CGM_D2Q9<X, Y>::contactAngle(90);
+	//--6--
+	template<int X, int Y>
+	vector<double, 2> distribution_function_CGM_D2Q9<X, Y>::n_contact_angle({ cos(contactAngle / 180.0 * 3.141592653),sin(contactAngle / 180.0 * 3.141592653) });
+
 
 	template <int X, int Y>
 	inline distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b) {
@@ -1401,9 +1543,107 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
+	template <int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::wetting_boundary(double contact_angle,double delta_2) {
+		//湿润边界条件,这个边界条件只使用于两相界面
+		//在边界使用虚拟的梯度，只在接触线上的晶格设置
+		contactAngle = contact_angle;
+		n_contact_angle = { cos(contact_angle / 180.0 * 3.141592653), sin(contact_angle / 180.0 * 3.141592653) };
+		double temp1 = 0, temp2 = 0;
+		//第一步先估算SB的相场
+		for (int i = 0; i <= X + 1; i++) {
+			for (int j = 0; j <= Y + 1; j++) {
+				if (area(i,j) == areatype::SB) {
+					temp1 = 0;
+					temp2 = 0;
+					phaseField(i, j) = 0;
+
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (area(i + x, j + y) == areatype::FB) {
+								temp1 += w(x * x + y * y) * phaseField(i + x, j + y, 0);
+								temp2 += w(x * x + y * y);
+							}
+						}
+					}
+
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (area(i + x, j + y) == areatype::FB) {
+								phaseField(i, j) = temp1 / temp2;
+							}
+						}
+					}
+
+				}
+
+			}
+		}
+		//第二步利用第一步估算的SB处的相场 计算FB处的相场梯度
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i, j) == areatype::FB) {
+
+					phaseField.gradient(i, j)(0) = 1.0 / 12.0 * (phaseField(i + 1, j + 1) - phaseField(i - 1, j + 1))
+						+ 1.0 / 3.0 * (phaseField(i + 1, j) - phaseField(i - 1, j)) + 1.0 / 12.0 * (phaseField(i + 1, j - 1) - phaseField(i - 1, j - 1));
+
+					phaseField.gradient(i, j)(1) = 1.0 / 12.0 * (phaseField(i + 1, j + 1) - phaseField(i + 1, j - 1))
+						+ 1.0 / 3.0 * (phaseField(i, j + 1) - phaseField(i, j - 1)) + 1.0 / 12.0 * (phaseField(i - 1, j + 1) - phaseField(i - 1, j - 1));
+
+					if (phaseField.gradient(i, j) * phaseField.gradient(i, j) > delta_2) {
+						fluidcolor = fluidtype::interface;
+					}
+					else if (phaseField(i,j) > 0) {
+						fluidcolor = fluidtype::red;
+					}
+					else {
+						fluidcolor = fluidtype::blue;
+					}
+
+				}
+			}
+		}
+		//第三步保持在FB估算的相场梯度F_x,F_y大小不变，根据接触角与FB处的固壁法向ns修正方向
+		double n1x, n1y, n2x, n2y, Fxn, Fyn, D1, D2, FF;
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i,j) == areatype::FB) {
+
+					if (fluidcolor(i,j) == fluidtype::interface) {
+
+						n1x = vector<double, 2>({ ns(i, j)(0) ,-ns(i, j)(1) }) * n_contact_angle;
+						n1y = vector<double, 2>({ ns(i, j)(1) ,ns(i, j)(0) }) * n_contact_angle;
+						n2x = vector<double, 2>({ ns(i, j)(0) ,ns(i, j)(1) }) * n_contact_angle;
+						n2y = vector<double, 2>({ ns(i, j)(1) ,-ns(i, j)(0) }) * n_contact_angle;
+
+						FF = phaseField.gradient(i, j) * phaseField.gradient(i, j);
+						Fxn = phaseField.gradient(i, j)(0) / sqrt(FF);
+						Fyn = phaseField.gradient(i, j)(1) / sqrt(FF);
+						D1 = sqrt((Fxn - n1x) * (Fxn - n1x) + (Fyn - n1y) * (Fyn - n1y));
+						D2 = sqrt((Fxn - n2x) * (Fxn - n2x) + (Fyn - n2y) * (Fyn - n2y));
+						if (D1 < D2) {
+							phaseField.gradient(i, j)(0) = sqrt(FF) * n1x;
+							phaseField.gradient(i, j)(1) = sqrt(FF) * n1y;
+						}
+						else if (D1 > D2) {
+							phaseField.gradient(i, j)(0) = sqrt(FF) * n2x;
+							phaseField.gradient(i, j)(1) = sqrt(FF) * n2y;
+						}
+						else {
+							phaseField.gradient(i, j)(0) = sqrt(FF) * ns(i,j)(0);
+							phaseField.gradient(i, j)(1) = sqrt(FF) * ns(i,j)(1);
+						}
+					}
+
+				}
+			}
+		}
+		return *this;
+	}
+
 	//perturbation
 	template <int X, int Y>
-	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::perturbationLui2012(double A) {
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::perturbationLiu2012(double A) {
 		double FF = 0, Fc = 0;
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
