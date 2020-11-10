@@ -925,6 +925,31 @@ namespace distribution_function_template_space {
 			return *(distribution_function_template_p + index);
 		}
 
+		//use carefully!
+		double& operator()(int i, int j, int q,int) {
+			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
+			if (i == X + 1) {
+				i = 1;
+			}
+			if (i == 0) {
+				i = X;
+			}
+			if (j == Y + 1) {
+				j = 1;
+			}
+			if (j == 0) {
+				j = Y;
+			}
+			if (q < 0) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d < 0\n", q);
+			}
+			else if (q > 8) {
+				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d > 8\n", q);
+			}
+			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
+			return *(distribution_function_template_p + index);
+		}
+
 		
 		distribution_function_template_D2Q9<X, Y>& streaming();
 
@@ -941,6 +966,10 @@ namespace distribution_function_template_space {
 		distribution_function_template_D2Q9<X, Y>& single_phase_collison_SRT();
 		//--2--MRT
 		distribution_function_template_D2Q9<X, Y>& single_phase_collison_MRT();
+
+		//boundary condition : bounce back
+		distribution_function_template_D2Q9<X, Y>& bounce_back_halfway();
+
 
 	protected:
 
@@ -1191,6 +1220,43 @@ namespace distribution_function_template_space {
 					(*this)(i, j, q) = f_vector_post_collison(q);
 			}
 		}		
+		return *this;
+	}
+
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::bounce_back_halfway() {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i,j) == areatype::FB) {
+					
+					if (area(i - 1,j) == areatype::SB) {
+						(*this)(i, j, 1, 0) = (*this)(i - 1, j, 3, 0);
+					}
+					if (area(i, j - 1) == areatype::SB) {
+						(*this)(i, j, 2, 0) = (*this)(i, j - 1, 4, 0);
+					}
+					if (area(i + 1, j) == areatype::SB) {
+						(*this)(i, j, 3, 0) = (*this)(i + 1, j, 1, 0);
+					}
+					if (area(i, j + 1) == areatype::SB) {
+						(*this)(i, j, 4, 0) = (*this)(i, j + 1, 2, 0);
+					}
+					if (area(i - 1, j - 1) == areatype::SB) {
+						(*this)(i, j, 5, 0) = (*this)(i - 1, j - 1, 7, 0);
+					}
+					if (area(i + 1, j - 1) == areatype::SB) {
+						(*this)(i, j, 6, 0) = (*this)(i + 1, j - 1, 8, 0);
+					}
+					if (area(i + 1, j + 1) == areatype::SB) {
+						(*this)(i, j, 7, 0) = (*this)(i + 1, j + 1, 5, 0);
+					}
+					if (area(i - 1, j + 1) == areatype::SB) {
+						(*this)(i, j, 8, 0) = (*this)(i - 1, j + 1, 6, 0);
+					}
+
+				}
+			}
+		}
 		return *this;
 	}
 
