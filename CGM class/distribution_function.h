@@ -4,9 +4,13 @@
 #include <iostream>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
+#include <vector>
+#include <string>
 
 //vector template
 namespace distribution_function_template_space {
+
 	//important!!!!!!!!
 	//vector template--------------------------------------
 	template <typename T, int N>
@@ -1019,6 +1023,8 @@ namespace distribution_function_template_space {
 		static matrix<double, 9, 9> M;
 		static matrix<double, 9, 9> InM;
 
+		static void setarea(std::string& area_file_name);
+
 		//It varies depending on the different distribution functions.
 		double nu;
 		vector<double, 9> S;
@@ -1377,14 +1383,248 @@ namespace distribution_function_template_space {
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
 				if (area(i, j) == areatype::outlet || area(i, j) == areatype::FB_outlet) {
-
 					//==========================================================================
+
 
 				}
 			}
 		}
 
 		return *this;
+	}
+
+}
+
+//read area_file and design area
+namespace distribution_function_template_space {
+
+	//read area : S INLET OUTLET
+	template<int X,int Y>
+	int read_area_file(area_field<areatype,X,Y>& areafield,std::string& area_file_name) {
+
+		std::fstream file(area_file_name, std::ios::in);
+
+		if (!file) {
+			std::cout << "open file error!" << std::endl;
+		}
+
+		std::vector<std::string> vec_str;
+		std::vector<int> index;
+		std::string str_for_cin;
+		int count = 0;
+
+		while (file >> str_for_cin) {
+			vec_str.push_back(str_for_cin);
+			if (str_for_cin == "block") {
+				index.push_back(count);//0
+			}
+			else if (str_for_cin == "S") {
+				index.push_back(count);//1
+			}
+			else if (str_for_cin == "INLET") {
+				index.push_back(count);//2
+			}
+			else if (str_for_cin == "OUTLET") {
+				index.push_back(count);//3
+			}
+			count++;
+		}
+
+		//detect
+		if (index.size() != 4) {
+			std::cout << "read area error!" << std::endl;
+			return -1;
+		}
+
+		//int X,Y;
+		//X = stoi(vec_str[index[0] + 1]);
+		//Y = stoi(vec_str[index[0] + 2]);
+		//std::cout << "X=" << X << " Y=" << Y << std::endl;
+
+		//detect block
+		//area_file 文件中"block"所包含的值与代码中的X Y对应，由于实际区域的长度为X+2 Y+2，所以S INLET OUTLET中的坐标上限为X+1或Y+1，下限为0
+		if (stoi(vec_str[index[0] + 1]) != X && stoi(vec_str[index[0] + 2]) != Y ) {
+			std::cout << "X or Y is not consistent with code" << std::endl;
+		}
+
+
+		//read S
+		for (int i = index[1] + 1; i < index[2] - 1; i++, i++) {
+			//std::cout << stoi(vec_str[i]) << " " << stoi(vec_str[i + 1]) << std::endl;
+			areafield(stoi(vec_str[i]), stoi(vec_str[i + 1])) = areatype::S;
+		}
+
+		//read inlet
+		for (int i = index[2] + 1; i < index[3] - 1; i++, i++) {
+			//std::cout << stoi(vec_str[i]) << " " << stoi(vec_str[i + 1]) << std::endl;
+			areafield(stoi(vec_str[i]), stoi(vec_str[i + 1])) = areatype::INLET;
+		}
+
+		//read outlet
+		for (int i = index[3] + 1; i < count - 1; i++, i++) {
+			//std::cout << stoi(vec_str[i]) << " " << stoi(vec_str[i + 1]) << std::endl;
+			areafield(stoi(vec_str[i]), stoi(vec_str[i + 1])) = areatype::OUTLET;
+		}
+		
+		file.close();
+		return 0;
+	}
+
+	template<int X,int Y>
+	void setF(area_field<areatype, X, Y>& areafield) {
+		for (int i = 0; i <= X+1; i++) {
+			for (int j = 0; j <= Y+1; j++) {
+				if (areafield(i, j) != areatype::S && areafield(i, j) != areatype::INLET && areafield(i, j) != areatype::OUTLET) {
+					areafield(i, j) = areatype::F;
+				}
+			}
+		}
+		return;
+	}
+
+	template<int X, int Y>
+	void setFBFL(area_field<areatype, X, Y>& areafield) {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (areafield(i, j) == areatype::F) {
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (areafield(i + x, j + y) == areatype::S) {
+								areafield(i, j) = areatype::FB;
+							}
+						}
+					}
+				}
+			}
+		}
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (areafield(i, j) == areatype::F) {
+					areafield(i, j) = areatype::FL;
+				}
+			}
+		}
+		return;
+	}
+
+	template<int X, int Y>
+	void setSBSL(area_field<areatype, X, Y>& areafield) {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (areafield(i, j) == areatype::FB) {
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (areafield(i + x, j + y) == areatype::S) {
+								areafield(i + x, j + y) = areatype::SB;
+							}
+						}
+					}
+				}
+			}
+		}
+		for (int i = 0; i <= X + 1; i++) {
+			for (int j = 0; j <= Y + 1; j++) {
+				if (areafield(i, j) == areatype::S) {
+					areafield(i, j) = areatype::SL;
+				}
+			}
+		}
+		return;
+	}
+
+	template<int X, int Y>
+	void setinlet_outlet(area_field<areatype, X, Y>& areafield) {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (areafield(i, j) == areatype::FB || areafield(i, j) == areatype::FL){
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (areafield(i + x, j + y) == areatype::INLET) {
+								areafield(i + x, j + y) = areatype::inlet;
+							}
+							if (areafield(i + x, j + y) == areatype::OUTLET) {
+								areafield(i + x, j + y) = areatype::outlet;
+							}
+						}
+					}
+				}
+			}
+		}
+		return;
+	}
+
+	template<int X, int Y>
+	void setFB_inlet_FB_outlet(area_field<areatype, X, Y>& areafield) {
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (areafield(i, j) == areatype::inlet) {
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (areafield(i + x, j + y) == areatype::SB) {
+								areafield(i + x, j + y) = areatype::FB_inlet;
+							}
+						}
+					}
+				}
+				if (areafield(i, j) == areatype::outlet) {
+					for (int x = -1; x <= 1; x++) {
+						for (int y = -1; y <= 1; y++) {
+							if (areafield(i + x, j + y) == areatype::SB) {
+								areafield(i + x, j + y) = areatype::FB_outlet;
+							}
+						}
+					}
+				}
+			}
+		}
+		return;
+	}
+
+	//inculded by tempalte class distribution_function_template_D2Q9<X, Y>
+	template<int X, int Y>
+	void distribution_function_template_D2Q9<X, Y>::setarea(std::string& area_file_name) {
+
+		area_field<areatype, X, Y>& areafield = area;
+
+		if(read_area_file<X, Y>(areafield, area_file_name) == -1) return;
+		
+		setF<X, Y>(areafield);
+
+		setFBFL<X, Y>(areafield);
+
+		//detect FB and FL
+		for (int i = 0; i <= X + 1; i++) {
+			for (int j = 0; j <= Y + 1; j++) {
+				if (areafield(i, j) == areatype::FB || areafield(i, j) == areatype::FL) {
+					if (i == 0 || i == X + 1 || j == 0 || j == Y + 1) {
+						std::cout << "FB or FL is at margin e. i==0,j==0,i==X+1,j==Y+1 : error!" << std::endl;
+						return;
+					}
+				}
+			}
+		}
+
+		setSBSL<X, Y>(areafield);
+
+		setinlet_outlet<X, Y>(areafield);
+
+		//detect inlet and outlet
+		for (int i = 0; i <= X + 1; i++) {
+			for (int j = 0; j <= Y + 1; j++) {
+				if (areafield(i, j) == areatype::inlet || areafield(i, j) == areatype::outlet) {
+					if ((i == 1 || i == X) && (j == 1 || j == Y))
+						;
+					else {
+						std::cout << "inlet or outlet is not near margin e. i!=1 and i!=X: error!" << std::endl;
+						return;
+					}
+				}
+			}
+		}
+
+		setFB_inlet_FB_outlet<X, Y>(areafield);
+
+		return;
 	}
 
 }
@@ -1435,7 +1675,7 @@ namespace distribution_function_template_space {
 		distribution_function_CGM_D2Q9<X, Y>& single_phase_collison_MRT(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
 
 		//for color gradient model(CGM)
-		static vector2D_field<X, Y> ns; //----------====================-----------------=================--------------------------==========
+		static vector2D_field<X, Y> ns;
 		static scalar_field_space::phase_field<X, Y> phaseField;
 		static fluid_field<fluidtype, X, Y> fluidcolor;
 		static vector<double, 9> B;
@@ -1449,6 +1689,8 @@ namespace distribution_function_template_space {
 		static double omega_is(int i, int j, distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b, double rho_r_reference = 1.0, double rho_b_reference = 1.0) {
 			return 2.0 / (6.0 * distribution_function_CGM_D2Q9<X, Y>::nu_is(i, j, f_r, f_b) + 1.0);
 		}
+
+		static void caculate_ns();
 
 		distribution_function_CGM_D2Q9<X, Y>& wetting_boundary(double contact_angle, double delta_2 = 0.05);
 
@@ -1545,12 +1787,11 @@ namespace distribution_function_template_space {
 
 	template <int X, int Y>
 	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::wetting_boundary(double contact_angle,double delta_2) {
-		//湿润边界条件,这个边界条件只使用于两相界面
-		//在边界使用虚拟的梯度，只在接触线上的晶格设置
+		//wetting boundary conditions, which are used only for two-phase interfaces
 		contactAngle = contact_angle;
 		n_contact_angle = { cos(contact_angle / 180.0 * 3.141592653), sin(contact_angle / 180.0 * 3.141592653) };
 		double temp1 = 0, temp2 = 0;
-		//第一步先估算SB的相场
+		//First step : estimate the phase field at SB
 		for (int i = 0; i <= X + 1; i++) {
 			for (int j = 0; j <= Y + 1; j++) {
 				if (area(i,j) == areatype::SB) {
@@ -1579,7 +1820,7 @@ namespace distribution_function_template_space {
 
 			}
 		}
-		//第二步利用第一步估算的SB处的相场 计算FB处的相场梯度
+		//Second step : uses the phase field estimated at SB in the first step to caculate the phase field at FB
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
 				if (area(i, j) == areatype::FB) {
@@ -1603,7 +1844,7 @@ namespace distribution_function_template_space {
 				}
 			}
 		}
-		//第三步保持在FB估算的相场梯度F_x,F_y大小不变，根据接触角与FB处的固壁法向ns修正方向
+		//Third step : keep the magnitude of phase field gradient estimated at FB unchanged, then correct the direction of phase field gradient based the contact Angle and the fixed wall normal at FB
 		double n1x, n1y, n2x, n2y, Fxn, Fyn, D1, D2, FF;
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
@@ -1687,6 +1928,88 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
+}
+
+//design area the calculate ns
+namespace distribution_function_template_space {
+	
+	
+
+	double ww(int k) {
+		if (k == 0)
+			return 0;
+		else if (k == 1)
+			return 4.0 / 21.0;
+		else if (k == 2)
+			return 4.0 / 45.0;
+		else if (k == 4)
+			return 1.0 / 60.0;
+		else if (k == 5)
+			return 2.0 / 315.0;
+		else if (k == 8)
+			return 1.0 / 5040.0;
+		return 0;
+	}
+
+	template<int X,int Y>
+	double s(int& i, int& j, area_field<areatype, X, Y>& area) {
+		
+		if (i >= 0 && i <= X + 1 && j >= 0 && j <= Y + 1) {
+			if (area(i, j) == areatype::SB || area(i, j) == areatype::SL)
+				return 1.0;
+			else
+				return 0;
+		}
+		else
+			return 1.0;
+
+	}
+
+	template<int X, int Y>
+	double tempx(int& i, int& j, area_field<areatype, X, Y>& area) {
+		double temp = 0;
+		for (int x = -2; x <= 2; x++) {
+			for (int y = -2; y <= 2; y++) {
+				temp += ww(x * x + y * y) * s<x,y>(i + x, j + y, area) * x;
+			}
+		}
+		return temp;
+	}
+
+	template<int X, int Y>
+	double tempy(int& i, int& j, area_field<areatype, X, Y>& area) {
+		double temp = 0;
+		for (int x = -2; x <= 2; x++) {
+			for (int y = -2; y <= 2; y++) {
+				temp += ww(x * x + y * y) * s<X,Y>(i + x, j + y, area) * y;
+			}
+		}
+		return temp;
+	}
+
+	template<int X,int Y>
+	void distribution_function_CGM_D2Q9<X, Y>::caculate_ns() {
+
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i,j) == areatype::FB) {
+					ns(i,j)(0) = tempx<X, Y>(i, j, area) / sqrt(tempx<X, Y>(i, j, area) * tempx<X, Y>(i, j, area) + tempy<X, Y>(i, j, area) * tempy<X, Y>(i, j, area));
+					ns(i,j)(1) = tempy<X, Y>(i, j, area) / sqrt(tempx<X, Y>(i, j, area) * tempx<X, Y>(i, j, area) + tempy<X, Y>(i, j, area) * tempy<X, Y>(i, j, area));
+				}
+			}
+		}
+		//amend ns
+		for (int i = 1; i <= X; i++) {
+			for (int j = 1; j <= Y; j++) {
+				if (area(i, j) != areatype::FB) {
+					ns(i, j)(0) = 0;
+					ns(i, j)(1) = 0;
+				}
+			}
+		}
+
+		return;
+	}
 }
 
 #endif // !_DISTRIBUTION_FUNCTION_H_
