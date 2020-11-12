@@ -1646,6 +1646,8 @@ namespace distribution_function_template_space {
 		using distribution_function_template_D2Q9<X, Y>::InM;
 		using distribution_function_template_D2Q9<X, Y>::S;
 		using distribution_function_template_D2Q9<X, Y>::area;
+		using distribution_function_template_D2Q9<X, Y>::density;
+		using distribution_function_template_D2Q9<X, Y>::velocity;
 
 		double& operator()(int i, int j, int q) {
 			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
@@ -1707,6 +1709,7 @@ namespace distribution_function_template_space {
 		//This function is used in the color gradient model to get the total distribution function.
 		distribution_function_CGM_D2Q9<X, Y>& blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
 
+		distribution_function_CGM_D2Q9<X, Y>& out_file_CGM(std::string& filename);
 	};
 
 	//initialize
@@ -2074,6 +2077,72 @@ namespace distribution_function_template_space {
 		for (int j = 1; j <= Y; j++) {
 			for (int i = 1; i <= X; i++) {
 				outfile << velocity(i,j)(0) << " " << velocity(i,j)(1) << " " << 0 << std::endl;
+			}
+		}
+
+		outfile.close();
+		return *this;
+	}
+
+	//member function of distribution_function_template_D2Q9<X, Y>
+	template<int X, int Y>
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::out_file_CGM(std::string& filename) {
+
+		//if (step % interval == 0) {
+		//	f.out_file("resultCGM" + to_string(step / interval) + ".vtk");
+		//}
+
+		std::ofstream outfile;
+		outfile.open(filename);
+
+		vtk_header<X, Y>(outfile, filename);
+
+		vtk_scalar_header(outfile, "density");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << density(i, j) << std::endl;
+			}
+		}
+
+		vtk_scalar_header(outfile, "area");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << area(i, j) << std::endl;
+			}
+		}
+
+		vtk_scalar_header(outfile, "fluidfield");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << fluidcolor(i, j) << std::endl;
+			}
+		}
+
+		vtk_scalar_header(outfile, "phasefield");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << phaseField(i, j) << std::endl;
+			}
+		}
+
+		vtk_vector_header(outfile, "velocity");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << velocity(i, j)(0) << " " << velocity(i, j)(1) << " " << 0 << std::endl;
+			}
+		}
+
+		vtk_vector_header(outfile, "phasefieldgradient");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << phaseField.gradient(i, j)(0) << " " << phaseField.gradient(i, j)(1) << " " << 0 << std::endl;
+			}
+		}
+
+		vtk_vector_header(outfile, "ns");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << ns(i, j)(0) << " " << ns(i, j)(1) << " " << 0 << std::endl;
 			}
 		}
 
