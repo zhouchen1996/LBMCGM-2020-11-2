@@ -1025,7 +1025,7 @@ namespace distribution_function_template_space {
 		static matrix<double, 9, 9> M;
 		static matrix<double, 9, 9> InM;
 
-		static void setarea(std::string& area_file_name);
+		static void setarea(const std::string& area_file_name);
 
 		//It varies depending on the different distribution functions.
 		double nu;
@@ -1402,7 +1402,7 @@ namespace distribution_function_template_space {
 
 	//read area : S INLET OUTLET
 	template<int X,int Y>
-	int read_area_file(area_field<areatype,X,Y>& areafield,std::string& area_file_name) {
+	int read_area_file(area_field<areatype,X,Y>& areafield,const std::string& area_file_name) {
 
 		std::fstream file(area_file_name, std::ios::in);
 
@@ -1481,6 +1481,7 @@ namespace distribution_function_template_space {
 				}
 			}
 		}
+
 		return;
 	}
 
@@ -1542,10 +1543,10 @@ namespace distribution_function_template_space {
 					for (int x = -1; x <= 1; x++) {
 						for (int y = -1; y <= 1; y++) {
 							if (areafield(i + x, j + y) == areatype::INLET) {
-								areafield(i + x, j + y) = areatype::inlet;
+								areafield(i, j) = areatype::inlet;
 							}
 							if (areafield(i + x, j + y) == areatype::OUTLET) {
-								areafield(i + x, j + y) = areatype::outlet;
+								areafield(i, j) = areatype::outlet;
 							}
 						}
 					}
@@ -1563,7 +1564,7 @@ namespace distribution_function_template_space {
 					for (int x = -1; x <= 1; x++) {
 						for (int y = -1; y <= 1; y++) {
 							if (areafield(i + x, j + y) == areatype::SB) {
-								areafield(i + x, j + y) = areatype::FB_inlet;
+								areafield(i, j) = areatype::FB_inlet;
 							}
 						}
 					}
@@ -1572,19 +1573,29 @@ namespace distribution_function_template_space {
 					for (int x = -1; x <= 1; x++) {
 						for (int y = -1; y <= 1; y++) {
 							if (areafield(i + x, j + y) == areatype::SB) {
-								areafield(i + x, j + y) = areatype::FB_outlet;
+								areafield(i, j) = areatype::FB_outlet;
 							}
 						}
 					}
 				}
 			}
 		}
+
+		std::cout << "detect areatype::FB_outlet and areatype::FB_inlet:" << std::endl;
+		for (int i = 0; i <= X+1; i++) {
+			for (int j = 0; j <= Y+1; j++) {
+				if (areafield(i, j) == areatype::FB_outlet || areafield(i, j) == areatype::FB_inlet) {	
+					std::cout << "i=" << i << " j=" << j << std::endl;
+				}
+			}
+		}
+
 		return;
 	}
 
 	//inculded by tempalte class distribution_function_template_D2Q9<X, Y>
 	template<int X, int Y>
-	void distribution_function_template_D2Q9<X, Y>::setarea(std::string& area_file_name) {
+	void distribution_function_template_D2Q9<X, Y>::setarea(const std::string& area_file_name) {
 
 		area_field<areatype, X, Y>& areafield = area;
 
@@ -1614,7 +1625,8 @@ namespace distribution_function_template_space {
 		for (int i = 0; i <= X + 1; i++) {
 			for (int j = 0; j <= Y + 1; j++) {
 				if (areafield(i, j) == areatype::inlet || areafield(i, j) == areatype::outlet) {
-					if ((i == 1 || i == X) && (j == 1 || j == Y))
+					//std::cout << "i=" << i << " j=" << j << std::endl;
+					if (i == 1 || i == X || j == 1 || j == Y)
 						;
 					else {
 						std::cout << "inlet or outlet is not near margin e. i!=1 and i!=X: error!" << std::endl;
