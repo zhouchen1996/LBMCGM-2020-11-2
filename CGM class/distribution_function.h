@@ -1009,6 +1009,8 @@ namespace distribution_function_template_space {
 		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
 		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_convective();
 
+		distribution_function_template_D2Q9<X, Y>& out_file(std::string&);
+
 	protected:
 
 		static vector<double, 9> w;
@@ -1933,8 +1935,6 @@ namespace distribution_function_template_space {
 //design area the calculate ns
 namespace distribution_function_template_space {
 	
-	
-
 	double ww(int k) {
 		if (k == 0)
 			return 0;
@@ -2010,6 +2010,77 @@ namespace distribution_function_template_space {
 
 		return;
 	}
+}
+
+//output
+namespace distribution_function_template_space {
+
+	template<int X,int Y>
+	void vtk_header(std::ofstream& outfile, const std::string& filename) {
+		outfile << "# vtk DataFile Version 3.0" << std::endl;
+		outfile << filename << std::endl;
+		outfile << "ASCII" << std::endl;
+		outfile << "DATASET STRUCTURED_GRID" << std::endl;
+		outfile << "DIMENSIONS" << " " << X << " " << Y << " " << 1 << std::endl;
+		outfile << "POINTS" << " " << X * Y * 1 << " " << "double" << std::endl;
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << i << " " << j << " " << 0 << std::endl;
+			}
+		}
+		outfile << "POINT_DATA" << " " << X * Y * 1 << std::endl;
+		return;
+	}
+
+	void vtk_scalar_header(std::ofstream& outfile, const std::string& scalar_name) {
+		outfile << "SCALARS" << " " << scalar_name << " " << "double 1" << std::endl;
+		outfile << "LOOKUP_TABLE default" << std::endl;
+		return;
+	}
+
+	void vtk_vector_header(std::ofstream& outfile, const std::string& vector_name) {
+		outfile << "VECTORS" << " " << vector_name << " " << "float" << std::endl;
+		return;
+	}
+
+	//member function of distribution_function_template_D2Q9<X, Y> 
+	template<int X,int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::out_file(std::string& filename){
+
+		//if (step % interval == 0) {
+		//	f.out_file("result" + to_string(step / interval) + ".vtk");
+		//}
+
+		std::ofstream outfile;
+		outfile.open(filename);
+
+		vtk_header<X, Y>(outfile, filename);
+
+		vtk_scalar_header(outfile, "density");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << density(i,j) << std::endl;
+			}
+		}
+
+		vtk_scalar_header(outfile, "area");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << area(i,j) << std::endl;
+			}
+		}
+		
+		vtk_vector_header(outfile, "velocity");
+		for (int j = 1; j <= Y; j++) {
+			for (int i = 1; i <= X; i++) {
+				outfile << velocity(i,j)(0) << " " << velocity(i,j)(1) << " " << 0 << std::endl;
+			}
+		}
+
+		outfile.close();
+		return *this;
+	}
+
 }
 
 #endif // !_DISTRIBUTION_FUNCTION_H_
