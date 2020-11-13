@@ -55,17 +55,11 @@ namespace distribution_function_template_space {
 
 		T& operator()(int i) {
 			//start from 0
-			if (i >= N || i < 0) { 
-				printf("\nVector template is called, but the subscript exceeds the limit.\n"); 
-			}
 			return v[i];
 		}
 
 		T& operator()(int i) const {
 			//start from 0
-			if (i >= N || i < 0) {
-				printf("\nVector template is called, but the subscript exceeds the limit.\n");
-			}
 			return v[i];
 		}
 
@@ -89,7 +83,7 @@ namespace distribution_function_template_space {
 		}
 
 	private:
-		T* v;
+		T *v;
 	};
 
 	// * for vector template
@@ -128,18 +122,29 @@ namespace distribution_function_template_space {
 	template <typename T, int X,int Y>
 	class matrix {
 	public:
-		matrix() : matrix_p(new T[X * Y]){
-			for (int r = 0; r < X * Y; r++)
-				*(matrix_p + r) = T();
+
+		matrix() : matrix_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				matrix_p[i] = new T[Y];
+			}
 		}
 
-		matrix(const T& initial) : matrix_p(new T[X * Y])
+		matrix(const T& initial) : matrix_p(new T* [X])
 		{
-			for (int r = 0; r < X * Y; r++)
-				*(matrix_p + r) = initial;
+			for (int i = 0; i < X; i++) {
+				matrix_p[i] = new T[Y];
+			}
+			for (int i = 0; i < X; i++) {
+				for (int j = 0; j < Y; j++) {
+					matrix_p[i][j] = initial;
+				}
+			}
 		}
 
-		matrix(const T(&a)[X][Y]) : matrix_p(new T[X * Y]) {
+		matrix(const T(&a)[X][Y]) : matrix_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				matrix_p[i] = new T[Y];
+			}
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
 					(*this)(i, j) = a[i - 1][j - 1];
@@ -147,7 +152,10 @@ namespace distribution_function_template_space {
 			}
 		}
 
-		matrix(const vector<T,X>&a) : matrix_p(new T[X * Y]) {
+		matrix(const vector<T,X>&a) : matrix_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				matrix_p[i] = new T[Y];
+			}
 			//Construct a diagonal matrix
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
@@ -161,7 +169,10 @@ namespace distribution_function_template_space {
 			}
 		}
 
-		matrix(const matrix<T, X, Y>& matrix_) : matrix_p(new T[X * Y]) {
+		matrix(const matrix<T, X, Y>& matrix_) : matrix_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				matrix_p[i] = new T[Y];
+			}
 			for (int i = 1; i <= X; i++) {
 				for (int j = 1; j <= Y; j++) {
 					(*this)(i, j) = matrix_(i, j);
@@ -170,39 +181,11 @@ namespace distribution_function_template_space {
 		}
 
 		double& operator()(int i, int j) {
-			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-			if (i > X) {
-				printf("\nmatrix is called, but the first subscript exceeds the limit: %d > X\n", i);
-			}
-			else if (i < 1) {
-				printf("\nmatrix is called, but the first subscript exceeds the limit: %d < 1\n", i);
-			}
-			else if (j > Y) {
-				printf("\nmatrix is called, but the second subscript exceeds the limit: %d > Y\n", j);
-			}
-			else if (j < 1) {
-				printf("\nmatrix is called, but the second subscript exceeds the limit: %d < 1\n", j);
-			}
-			int index = (i - 1) * Y + (j - 1);
-			return *(matrix_p + index);
+			return matrix_p[i - 1][j - 1];
 		}
 
 		double& operator()(int i, int j) const {
-			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-			if (i > X) {
-				printf("\nmatrix is called, but the first subscript exceeds the limit: %d > X\n", i);
-			}
-			else if (i < 1) {
-				printf("\nmatrix is called, but the first subscript exceeds the limit: %d < 1\n", i);
-			}
-			else if (j > Y) {
-				printf("\nmatrix is called, but the second subscript exceeds the limit: %d > Y\n", j);
-			}
-			else if (j < 1) {
-				printf("\nmatrix is called, but the second subscript exceeds the limit: %d < 1\n", j);
-			}
-			int index = (i - 1) * Y + (j - 1);
-			return *(matrix_p + index);
+			return matrix_p[i - 1][j - 1];
 		}
 
 		matrix<T, X, Y>& operator=(const matrix<T, X, Y>& matrix_) {
@@ -245,11 +228,14 @@ namespace distribution_function_template_space {
 		friend matrix<T, X, Y> operator*(const matrix<T, X, K>& matrix_1,const matrix<T, K, Y>& matrix_2);
 
 		~matrix() {
-			delete[]matrix_p;
+			for (int i = 0; i < X; i++) {
+				delete [] matrix_p[i];
+			}
+			delete[] matrix_p;
 		}
 
 	protected:
-		double* matrix_p;
+		double** matrix_p;
 	};
 
 	template<typename T, int X, int Y>
@@ -301,40 +287,48 @@ namespace distribution_function_template_space {
 	template<int X, int Y>
 	class distribution_function_template_D2Q9;
 
+	//state areatype and fluidtype explicitly beforehand
+	enum class areatype;
+
+	enum class fluidtype;
+
+	//state area_field and fluid_field explicitly beforehand
+	template<typename T, int X, int Y>
+	class area_field;
+
+	template<typename T, int X, int Y>
+	class fluid_field;
+
 	//define vector field
 	template <int X, int Y>
 	class vector2D_field {
 	public:
 
-		vector2D_field(double initial_vector_x = 0, double initial_vector_y = 0) :vector2D_field_p(new vector<double, 2>[X * Y]) {
-			for (int r = 0; r < X * Y; r++)
-				*(vector2D_field_p + r) = { initial_vector_x,initial_vector_y };
+		vector2D_field(double initial_vector_x = 0, double initial_vector_y = 0) :vector2D_field_p(new vector<double, 2>* [X]) {
+			for (int i = 0; i < X; i++) {
+				vector2D_field_p[i] = new vector<double, 2>[Y];
+			}
+			for (int i = 0; i < X; i++) {
+				for (int j = 0; j < Y; j++) {
+					vector2D_field_p[i][j] = { initial_vector_x,initial_vector_y };
+				}
+			}
 		}
 
 		~vector2D_field() {
-			delete[]vector2D_field_p;
+			for (int i = 0; i < X; i++) {
+				delete[] vector2D_field_p[i];
+			}
+			delete[] vector2D_field_p;
 		}
 
 		vector<double, 2>& operator()(int i, int j) {
-			// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-			if (i > X) {
-				printf("\nvector2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
-			}
-			else if (i < 1) {
-				printf("\nvector2D_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
-			}
-			else if (j > Y) {
-				printf("\nvector2D_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
-			}
-			else if (j < 1) {
-				printf("\nvector2D_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
-			}
-			int index = (i - 1) * Y + (j - 1);
-			return *(vector2D_field_p + index);
+			return  vector2D_field_p[i - 1][j - 1];
 		}
 
 	protected:
-		vector<double, 2>* vector2D_field_p;
+		vector<double, 2>** vector2D_field_p;
+
 	};
 
 
@@ -345,23 +339,6 @@ namespace distribution_function_template_space {
 		public:
 			force2D_field(double initial_force2D_x = 0, double initial_force2D_y = 0) :vector2D_field<X, Y>(initial_force2D_x, initial_force2D_y) {}
 
-			vector<double, 2>& operator()(int i, int j) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\nforce2D_field is called, but the first subscript exceeds the limit: %d > X\n", i);
-				}
-				else if (i < 1) {
-					printf("\nforce2D_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
-				}
-				else if (j > Y) {
-					printf("\nforce2D_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
-				}
-				else if (j < 1) {
-					printf("\nforce2D_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
-				}
-				int index = (i - 1) * Y + (j - 1);
-				return *(this->vector2D_field_p + index);
-			}
 		};
 
 	}
@@ -383,66 +360,67 @@ namespace distribution_function_template_space {
 		public:
 
 			velocity2D_field(double initial_velocity_x = 0, double initial_velocity_y = 0) :vector2D_field<X, Y>(initial_velocity_x, initial_velocity_y){}
-
-			vector<double, 2>& operator()(int i, int j) {
-				// (i,j) <-- [i-1][j-1] <-- (i-1)*Y + (j-1)
-				if (i > X) {
-					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d > X\n",i);
-				}
-				else if (i < 1) {
-					printf("\nvelocity2D_field is called, but the first subscript exceeds the limit: %d < 1\n",i);
-				}
-				else if (j > Y) {
-					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d > Y\n",j);
-				}
-				else if (j < 1) {
-					printf("\nvelocity2D_field is called, but the second subscript exceeds the limit: %d < 1\n",j);
-				}
-				int index = (i - 1) * Y + (j - 1);
-				return *(this->vector2D_field_p + index);
-			}
 			
 			//velocity2D_field own function for calculate velocity from distribution function
-			velocity2D_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X,Y>& rho) {
+			velocity2D_field<X,Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X,Y>& rho,area_field<areatype,X,Y>& area) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7))/rho(i,j);
-						this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8))/rho(i,j);
+						if (area(i, j) != areatype::SB && area(i, j) != areatype::SL) {
+							this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7)) / rho(i, j);
+							this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8)) / rho(i, j);
+						}
+						else
+							this->operator()(i, j) = { 0,0 };//set SB SL 's velocity is 0
+						//!!!
+						if (area(i, j) == areatype::FB_outlet)
+							this->operator()(i, j) = { 0,0 };
+						
 					}
 				}
 				return *this;
 			}
 
 			//(Force term Guo.et al)velocity2D_field own function for calculate velocity from distribution function
-			velocity2D_field<X, Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X, Y>& rho,vector2D_field_space::force2D_field<X,Y>& force2D) {
+			velocity2D_field<X, Y>& calculate(distribution_function_template_D2Q9<X, Y>& f, scalar_field_space::density_field<X, Y>& rho,vector2D_field_space::force2D_field<X,Y>& force2D, area_field<areatype, X, Y>& area) {
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7) + 0.5 * force2D(i, j)(0)) / rho(i, j);
-						this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8) + 0.5 * force2D(i, j)(1)) / rho(i, j);
+						if (area(i, j) != areatype::SB && area(i, j) != areatype::SL) {
+							this->operator()(i, j)(0) = (f(i, j, 1) + f(i, j, 5) + f(i, j, 8) - f(i, j, 3) - f(i, j, 6) - f(i, j, 7) + 0.5 * force2D(i, j)(0)) / rho(i, j);
+							this->operator()(i, j)(1) = (f(i, j, 2) + f(i, j, 5) + f(i, j, 6) - f(i, j, 4) - f(i, j, 7) - f(i, j, 8) + 0.5 * force2D(i, j)(1)) / rho(i, j);
+						}
+						else
+							this->operator()(i, j) = { 0,0 };//set SB SL 's velocity is 0
+						//!!!
+						if (area(i, j) == areatype::FB_outlet)
+							this->operator()(i, j) = { 0,0 };
+
 					}
 				}
 				return *this;
 			}
 
+
+
 			//velocity2D_field own function for judge if the velocity value is normal
-			bool detect() {
-				double min = 0, max = 0;
+			bool detect(area_field<areatype, X, Y>& area) {
+				double max = 0;
 				double temp = 0;
-				int position[4]{ 1,1,1,1 };
+				int position[2]{ X / 2, Y / 2 };
 				for (int i = 1; i <= X; i++) {
-					for (int j = 1; j < Y; j++) {
-						if ((isfinite((*this)(i, j)(0)) && isfinite((*this)(i, j)(1))) != 0) {
-							temp = sqrt((*this)(i, j)(0) * (*this)(i, j)(0) + (*this)(i, j)(1) * (*this)(i, j)(1));
-							min = temp < min ? (position[0] = i, position[1] = j, temp) : min;
-							max = temp > max ? (position[2] = i, position[3] = j, temp) : max;
-						}
-						else {
-							printf("\nvelocity at (%d,%d) is infinite.\n", i, j);
-							return false;
+					for (int j = 1; j <= Y; j++) {
+						if (area(i, j) == areatype::FL) {
+							if ((isfinite((*this)(i, j)(0)) && isfinite((*this)(i, j)(1))) != 0) {
+								temp = sqrt((*this)(i, j) * (*this)(i, j));
+								max = temp > max ? (position[0] = i, position[1] = j, temp) : max;
+							}
+							else {
+								printf("\nvelocity at (%d,%d) is infinite.\n", i, j);
+								return false;
+							}
 						}
 					}
 				}
-				printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
+				printf("\nmax=%.6f at (%d,%d)\n", max, position[0], position[1]);
 				return true;
 			}
 
@@ -478,32 +456,27 @@ namespace distribution_function_template_space {
 		template<int X,int Y>
 		class scalar_field {
 		public:
-			scalar_field(double scalar_initial = 0) : scalar_p(new double[(X + 2) * (Y + 2)])
+			scalar_field(double scalar_initial = 0) : scalar_p(new double*[X + 2])
 			{
-				for (int r = 0; r < (X + 2) * (Y + 2); r++)
-					*(scalar_p + r) = scalar_initial;
+				for (int i = 0; i < X + 2; i++) {
+					scalar_p[i] = new double[Y + 2];
+				}
+				for (int i = 0; i < X + 2; i++) {
+					for (int j = 0; j < Y + 2; j++) {
+						scalar_p[i][j] = scalar_initial;
+					}
+				}
 			}
 
 			~scalar_field(){
+				for (int i = 0; i < X + 2; i++) {
+					delete[] scalar_p[i];
+				}
 				delete[]scalar_p;
 			}
 
 			double& operator()(int i,int j) {
-				// (i,j) <-- [i][j] <-- i*(Y+2) + j
-				if (i > X+1) {
-					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
-				}
-				else if (i < 0) {
-					printf("\nscalar_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
-				}
-				else if (j > Y+1) {
-					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
-				}
-				else if (j < 0) {
-					printf("\nscalar_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
-				}
-				int index = i * (Y + 2) + j;
-				return *(scalar_p + index);
+				return scalar_p[i][j];
 			}
 
 			//solve the sum of two scalar fields
@@ -518,7 +491,7 @@ namespace distribution_function_template_space {
 
 		protected:
 
-			double* scalar_p;
+			double** scalar_p;
 
 		};
 
@@ -526,6 +499,8 @@ namespace distribution_function_template_space {
 		template<int X,int Y>
 		class density_field :public scalar_field<X, Y> {
 		public:
+
+			using scalar_field<X, Y>::scalar_p;
 
 			density_field(double density_initial = 1.0, double solid_density_ = 1.0) :scalar_field<X, Y>(density_initial), solid_density(solid_density_) {}
 			
@@ -543,33 +518,18 @@ namespace distribution_function_template_space {
 			}
 
 			double& operator()(int i, int j) {
-				// (i,j) <-- [i][j] <-- i*(Y+2) + j
-				if (i > X + 1) {
-					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
-				}
-				else if (i < 0) {
-					printf("\ndensity_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
-				}
-				else if (j > Y + 1) {
-					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
-				}
-				else if (j < 0) {
-					printf("\ndensity_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
-				}
-				int index = i * (Y + 2) + j;
-				return *(this->scalar_p + index);
+				return scalar_p[i][j];
 			}
 
 			//carefully! 谨慎使用
 			//for calculating phase field gradient
 			//When the index may exceeds the limit,the density is virtual solid density(a functor convenient for setting wettability conditions).
 			double operator()(int i, int j, int) {
-				// (i,j) <-- [i][j] <-- i*(Y+2) + j
+				// (i,j) <-- [i][j]
 				if (i > X || i < 1 || j > Y || j < 1) {
 					return solid_density;
 				}
-				int index = i * (Y + 2) + j;
-				return *(this->scalar_p + index);
+				return scalar_p[i][j];
 			}
 
 			density_field<X, Y>& set_virtual_solid_density(double rho_s) {
@@ -582,11 +542,17 @@ namespace distribution_function_template_space {
 				double temp = 0;
 				for (int i = 1; i <= X; i++) {
 					for (int j = 1; j <= Y; j++) {
-						temp = 0;
-						for (int q = 0; q <= 8; q++) {
-							temp += f(i, j, q);
+
+						if (f.area(i, j) != areatype::SL && f.area(i, j) != areatype::SB) {
+							temp = 0;
+							for (int q = 0; q <= 8; q++) {
+								temp += f(i, j, q);
+							}
+							(*this)(i, j) = temp;
 						}
-						(*this)(i, j) = temp;
+						else
+							(*this)(i, j) = solid_density;
+
 					}
 				}
 				return *this;
@@ -629,36 +595,23 @@ namespace distribution_function_template_space {
 		class phase_field :public scalar_field<X, Y> {
 		public:
 
+			using scalar_field<X, Y>::scalar_p;
+
 			phase_field(double phase_initial = 0,double solid_phase_field_ = 0.0) :scalar_field<X, Y>(phase_initial),solid_phase_field(solid_phase_field_) {}
 
 			double& operator()(int i, int j) {
-				// (i,j) <-- [i][j] <-- i*(Y+2) + j
-				if (i > X+1) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d > X+1\n", i);
-				}
-				else if (i < 0) {
-					printf("\nphase_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
-				}
-				else if (j > Y+1) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d > Y+1\n", j);
-				}
-				else if (j < 0) {
-					printf("\nphase_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
-				}
-				int index = i * (Y + 2) + j;
-				return *(this->scalar_p + index);
+				return scalar_p[i][j];
 			}
 
 			//carefully! 谨慎使用
 			//for calculating phase field gradient
 			//When calculating the gradient, the index may exceeds the limit(a functor convenient for setting wettability conditions).
 			double operator()(int i, int j,int) {
-				// (i,j) <-- [i][j] <-- i*(Y+2) + j
+				// (i,j) <-- [i][j]
 				if (i > X || i < 1 || j > Y || j < 1) {
 					return solid_phase_field;
 				}
-				int index = i * (Y + 2) + j;
-				return *(this->scalar_p + index);
+				return scalar_p[i][j];
 			}
 
 			//These member function is for the color gradient model.
@@ -835,70 +788,73 @@ namespace distribution_function_template_space {
 	class area_field {
 	public:
 
-		area_field() :area_field_p(new T[(X + 2) * (Y + 2)]) {}
-
-		area_field(T area_initial_type) :area_field_p(new T[(X + 2) * (Y + 2)]) {
-			for (int r = 0; r < (X + 2) * (Y + 2); r++) {
-				*(area_field_p + r) = area_initial_type;
+		area_field() :area_field_p(new T* [X + 2]) {
+			for (int i = 0; i < X + 2; i++) {
+				area_field_p[i] = new T[Y + 2];
 			}
 		}
+
+		area_field(T area_initial_type) :area_field_p(new T* [X + 2]) {
+			for (int i = 0; i < X + 2; i++) {
+				area_field_p[i] = new T[Y + 2];
+			}
+			for (int i = 0; i < X + 2; i++) {
+				for (int j = 0; j < Y + 2; j++) {
+					area_field_p[i][j] = area_initial_type;
+				}
+			}
+		}
+
 		~area_field() {
+			for (int i = 0; i < X + 2; i++) {
+				delete[]area_field_p[i];
+			}
 			delete[]area_field_p;
 		}
 		T& operator()(int i,int j) {
-			// (i,j) <-- [i][j] <-- i * (Y + 2) + j
-			if (i > X + 1) {
-				printf("\narea_field is called, but the first subscript exceeds the limit: %d > X + 1\n", i);
-			}
-			else if (i < 0) {
-				printf("\narea_field is called, but the first subscript exceeds the limit: %d < 0\n", i);
-			}
-			else if (j > Y + 1) {
-				printf("\narea_field is called, but the second subscript exceeds the limit: %d > Y + 1\n", j);
-			}
-			else if (j < 0) {
-				printf("\narea_field is called, but the second subscript exceeds the limit: %d < 0\n", j);
-			}
-			int index = i * (Y + 2) + j;
-			return *(area_field_p + index);
+			return area_field_p[i][j];
 		}
 	protected:
-		T* area_field_p;
+		T** area_field_p;
 	};
 
 	template<typename T, int X, int Y>
 	class fluid_field {
 	public:
 
-		fluid_field() :fluid_field_p(new T[X * Y]) {}
-
-		fluid_field(T fluid_initial_type) :fluid_field_p(new T[X * Y]) {
-			for (int r = 0; r < X * Y; r++) {
-				*(fluid_field_p + r) = fluid_initial_type;
+		fluid_field() :fluid_field_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				fluid_field_p[i] = new T[Y];
 			}
 		}
+
+		fluid_field(T fluid_initial_type) :fluid_field_p(new T* [X]) {
+			for (int i = 0; i < X; i++) {
+				fluid_field_p[i] = new T[Y];
+			}
+			for (int i = 0; i < X; i++) {
+				for (int j = 0; j < Y; j++) {
+					fluid_field_p[i][j] = fluid_initial_type;
+				}
+			}
+		}
+
 		~fluid_field() {
+			for (int i = 0; i < X; i++) {
+				delete[]fluid_field_p[i];
+			}
 			delete[]fluid_field_p;
 		}
+
 		T& operator()(int i, int j) {
-			// (i,j) <-- [i-1][j-1] <-- (i-1) * Y + (j-1)
-			if (i > X) {
-				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d > X\n", i);
-			}
-			else if (i < 1) {
-				printf("\nfluid_field is called, but the first subscript exceeds the limit: %d < 1\n", i);
-			}
-			else if (j > Y) {
-				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d > Y\n", j);
-			}
-			else if (j < 1) {
-				printf("\nfluid_field is called, but the second subscript exceeds the limit: %d < 1\n", j);
-			}
-			int index = (i - 1) * Y + (j - 1);
-			return *(fluid_field_p + index);
+			// (i,j) <-- [i-1][j-1]
+			return fluid_field_p[i - 1][j - 1];
 		}
+
 	protected:
-		T* fluid_field_p;
+
+		T** fluid_field_p;
+
 	};
 
 }
@@ -913,8 +869,18 @@ namespace distribution_function_template_space {
 	public:
 
 		distribution_function_template_D2Q9(double rho_initial = 1.0, double nu_ = 1.0 / 6.0)
-			: distribution_function_template_p(new double[X * Y * 9]), density(rho_initial), nu(nu_), S({ 1.0,1.64,1.54,1.0,1.2,1.0,1.2, 1.0 / (3.0 * nu_ + 0.5), 1.0 / (3.0 * nu_ + 0.5) })
+			: distribution_function_template_p(new double**[X]), density(rho_initial), nu(nu_), 
+			S({ 1.0,1.64,1.54,1.0,1.2,1.0,1.2, 1.0 / (3.0 * nu_ + 0.5), 1.0 / (3.0 * nu_ + 0.5) }),
+			I(vector<double, 9>(1.0)), Matrix_S(S)
 		{
+			for (int i = 0; i < X; i++) {
+				distribution_function_template_p[i] = new double* [Y];
+			}
+			for (int i = 0; i < X; i++) {
+				for (int j = 0; j < Y; j++) {
+					distribution_function_template_p[i][j] = new double[9];
+				}
+			}
 			for (int i = 1; i <= X; i++)
 				for (int j = 1; j <= Y; j++)
 					for (int q = 0; q <= 8; q++)
@@ -922,37 +888,25 @@ namespace distribution_function_template_space {
 		}
 
 		~distribution_function_template_D2Q9() {
+			for (int i = 0; i < X; i++) {
+				for (int j = 0; j < Y; j++) {
+					delete[]distribution_function_template_p[i][j];
+				}
+			}
+			for (int i = 0; i < X; i++) {
+				delete[]distribution_function_template_p[i];
+			}
 			delete[]distribution_function_template_p;
 		}
 
 		double& operator()(int i, int j, int q) {
-			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
-			if (i > X) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the first subscript exceeds the limit: %d > X\n", i);
-			}
-			else if (i < 1) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the first subscript exceeds the limit: %d < 1\n", i);
-			}
-			else if (j > Y) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the second subscript exceeds the limit: %d > Y\n", j);
-			}
-			else if (j < 1) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the second subscript exceeds the limit: %d < 1\n", j);
-			}
-			else if (q < 0) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d < 0\n", q);
-			}
-			else if (q > 8) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d > 8\n", q);
-			}
-			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
-			return *(distribution_function_template_p + index);
+			// (i,j,q) <-- [i-1][j-1][q]
+			return distribution_function_template_p[i - 1][j - 1][q];
 		}
 
 		//use carefully!
 		//for boundary condition
 		double& operator()(int i, int j, int q,int) {
-			// (i,j,q) <-- [i-1][j-1][q] <-- (i-1) * Y * 9 + (j - 1) * 9 + q
 			if (i == X + 1) {
 				i = 1;
 			}
@@ -965,14 +919,7 @@ namespace distribution_function_template_space {
 			if (j == 0) {
 				j = Y;
 			}
-			if (q < 0) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d < 0\n", q);
-			}
-			else if (q > 8) {
-				printf("\ndistribution_function_template_D2Q9 is called, but the third subscript exceeds the limit: %d > 8\n", q);
-			}
-			int index = (i - 1) * Y * 9 + (j - 1) * 9 + q;
-			return *(distribution_function_template_p + index);
+			return distribution_function_template_p[i - 1][j - 1][q];
 		}
 
 		
@@ -985,7 +932,16 @@ namespace distribution_function_template_space {
 		double equilibrium(int i, int j, int q);
 
 		//Detect if the value of the distribution function is abnormal.
-		bool detect();
+		bool detect(area_field<areatype, X, Y>& area);
+		bool detect() {
+
+			for (int q = 0; q <= 8; q++) {
+				printf("f(172,70,%d)=%f\n", q, (*this)(172, 70, q));
+			}
+			printf("ux(172,70)=%f\n", (*this)(172, 70, 1)+ (*this)(172, 70, 5)+ (*this)(172, 70, 8)- (*this)(172, 70, 3)- (*this)(172, 70, 6)- (*this)(172, 70, 7));
+			return true;
+
+		}
 
 		//--1--SRT
 		distribution_function_template_D2Q9<X, Y>& single_phase_collison_SRT();
@@ -997,6 +953,8 @@ namespace distribution_function_template_space {
 
 		//boundary condition : velocity inlet
 		distribution_function_template_D2Q9<X, Y>& inlet_velocity(vector<double, 2> u_inlet);
+		distribution_function_template_D2Q9<X, Y>& inlet_velocity_2(vector<double, 2> u_inlet);
+		distribution_function_template_D2Q9<X, Y>& inlet_velocity_3(vector<double, 2> u_inlet);
 
 		//boundary condition : pressure inlet
 		//distribution_function_template_D2Q9<X, Y>& inlet_pressure(vector<double, 2> u_inlet);
@@ -1004,6 +962,7 @@ namespace distribution_function_template_space {
 		//boundary condition : outlflow oulet (Neumann boundary condition)
 		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
 		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_Neumann();
+		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_Neumann_2();
 
 		//boundary condition : outlflow oulet (convective boundary condition)
 		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
@@ -1015,7 +974,7 @@ namespace distribution_function_template_space {
 
 		static vector<double, 9> w;
 		static vector<double, 2> c[9];
-		double* distribution_function_template_p;
+		double*** distribution_function_template_p;
 
 	public:
 
@@ -1031,6 +990,10 @@ namespace distribution_function_template_space {
 		double nu;
 		vector<double, 9> S;
 		scalar_field_space::density_field<X, Y> density;
+
+		vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
+		matrix<double, 9, 9> I, Matrix_S;
+
 	};
 
 	//initialize (constant)
@@ -1194,30 +1157,35 @@ namespace distribution_function_template_space {
 
 
 	template <int X, int Y>
-	inline bool distribution_function_template_D2Q9<X, Y>::detect() {
+	inline bool distribution_function_template_D2Q9<X, Y>::detect(area_field<areatype, X, Y>& area) {
 		double min = 0, max = 0;
 		int position[4]{ 1,1,1,1 };
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j < Y; j++) {
 				for (int q = 0; q <= 8; q++) {
-					if (isfinite((*this)(i, j, q)) != 0) {
-						if ((*this)(i, j, q) >= 0) {
-							min = this->operator()(i, j, q) < min ? (position[0] = i, position[1] = j, this->operator()(i, j, q)) : min;
-							max = this->operator()(i, j, q) > max ? (position[2] = i, position[3] = j, this->operator()(i, j, q)) : max;
+					if (area(i, j) != areatype::SL && area(i, j) != areatype::SB) {
+
+						if (isfinite((*this)(i, j, q)) != 0) {
+							if ((*this)(i, j, q) >= 0) {
+								min = this->operator()(i, j, q) < min ? (position[0] = i, position[1] = j, this->operator()(i, j, q)) : min;
+								max = this->operator()(i, j, q) > max ? (position[2] = i, position[3] = j, this->operator()(i, j, q)) : max;
+							}
+							else {
+								printf("\nThe value of distribution function (%d,%d,%d) is %.6f < 0.It doesn't satisfy the requirement that it must be positive.\n", i, j, q, (*this)(i, j, q));
+								return false;
+							}
 						}
 						else {
-							printf("\nThe value of distribution function (%d,%d,%d) is %.6f < 0.It doesn't satisfy the requirement that it must be positive.\n", i, j, q, (*this)(i, j, q));
+							printf("\nThe value of distribution function (%d,%d,%d) is infinite.\n", i, j, q);
 							return false;
 						}
+
 					}
-					else {
-						printf("\nThe value of distribution function (%d,%d,%d) is infinite.\n", i, j, q);
-						return false;
-					}
+
 				}
 			}
 		}
-		printf("\nmax=%.6f at (%d,%d), min=%.6f at (%d,%d)\n", max, position[0], position[1], min, position[2], position[3]);
+		printf("\nmin=%.6f at (%d,%d), max=%.6f at (%d,%d)\n", min, position[0], position[1], max, position[2], position[3]);
 		return true;
 	}
 
@@ -1235,8 +1203,8 @@ namespace distribution_function_template_space {
 	//MRT
 	template <int X, int Y>
 	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::single_phase_collison_MRT() {
-		vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
-		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(S);
+		/*vector<double, 9> moment_pre_collison, moment_eq, moment_post_collison, f_vector_pre_collison, f_vector_eq, f_vector_post_collison;
+		matrix<double, 9, 9> I(vector<double, 9>(1.0)), Matrix_S(S);*/
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
 
@@ -1269,7 +1237,7 @@ namespace distribution_function_template_space {
 	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::bounce_back_halfway() {
 		for (int i = 1; i <= X; i++) {
 			for (int j = 1; j <= Y; j++) {
-				if (area(i,j) == areatype::FB || area(i, j) == areatype::FB_inlet) {
+				if (area(i,j) == areatype::FB || area(i, j) == areatype::FB_inlet || area(i, j) == areatype::FB_outlet) {
 					
 					if (area(i - 1,j) == areatype::SB) {
 						(*this)(i, j, 1, 0) = (*this)(i - 1, j, 3, 0);
@@ -1341,6 +1309,73 @@ namespace distribution_function_template_space {
 	}
 
 	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::inlet_velocity_2(vector<double, 2> u_inlet) {
+
+		for (int j = 1; j <= Y; j++) {
+			if (area(1, j) == areatype::inlet || area(1, j) == areatype::FB_inlet) {
+
+				(*this)(1, j, 1) = -(*this)(1, j, 3) + 2.0 * w(3) * density(1, j) * (1.0 + 4.5 * (c[3] * u_inlet) * (c[3] * u_inlet) - 1.5 * (u_inlet * u_inlet));
+				(*this)(1, j, 5) = -(*this)(1, j, 7) + 2.0 * w(7) * density(1, j) * (1.0 + 4.5 * (c[7] * u_inlet) * (c[7] * u_inlet) - 1.5 * (u_inlet * u_inlet));
+				(*this)(1, j, 8) = -(*this)(1, j, 6) + 2.0 * w(6) * density(1, j) * (1.0 + 4.5 * (c[6] * u_inlet) * (c[6] * u_inlet) - 1.5 * (u_inlet * u_inlet));
+
+			}
+		}
+
+		return *this;
+	}
+	
+	//建议使用
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::inlet_velocity_3(vector<double, 2> u_inlet) {
+
+		for (int j = 1; j <= Y; j++) {
+
+			if (area(1, j) == areatype::inlet) {
+
+				density(1, j) = (((*this)(1, j, 0) + (*this)(1, j, 2) + (*this)(1, j, 4)) + 2.0 * ((*this)(1, j, 3) + (*this)(1, j, 6) + (*this)(1, j, 7))) / (1 - u_inlet(0));
+				(*this)(1, j, 1) = (*this)(1, j, 3) + 2.0 * density(1, j) * u_inlet(0) / 3.0;
+				(*this)(1, j, 5) = (*this)(1, j, 7) - 0.5 * ((*this)(1, j, 2) - (*this)(1, j, 4)) + density(1, j) * u_inlet(0) / 6.0;
+				(*this)(1, j, 8) = (*this)(1, j, 6) + 0.5 * ((*this)(1, j, 2) - (*this)(1, j, 4)) + density(1, j) * u_inlet(0) / 6.0;
+
+			}
+
+			if (area(1, j) == areatype::FB_inlet) {
+				//u_inlet={0,0}
+				density(1, j) = (((*this)(1, j, 0) + (*this)(1, j, 2) + (*this)(1, j, 4)) + 2.0 * ((*this)(1, j, 3) + (*this)(1, j, 6) + (*this)(1, j, 7))) / (1 - 0);
+				(*this)(1, j, 1) = (*this)(1, j, 3) + 2.0 * density(1, j) * 0 / 3.0;
+				(*this)(1, j, 5) = (*this)(1, j, 7) - 0.5 * ((*this)(1, j, 2) - (*this)(1, j, 4)) + density(1, j) * 0 / 6.0;
+				(*this)(1, j, 8) = (*this)(1, j, 6) + 0.5 * ((*this)(1, j, 2) - (*this)(1, j, 4)) + density(1, j) * 0 / 6.0;
+
+			}
+
+		}
+
+		/*
+		
+		//入口的单位法向为(1,0)时的速度边界，(1,0)指向里面
+		for (int j = 3; j <= ny - 4; j++) {
+			rho[0][j] = ((f[0][j][0] + f[0][j][2] + f[0][j][4]) + 2.0 * (f[0][j][3] + f[0][j][6] + f[0][j][7])) / (1 - u[j]);
+			f[0][j][1] = f[0][j][3] + 2.0 * rho[0][j] * u[j] / 3.0;
+			f[0][j][5] = f[0][j][7] - 0.5 * (f[0][j][2] - f[0][j][4]) + rho[0][j] * u[j] / 6.0 + 0.5 * rho[0][j] * vInlet;
+			f[0][j][8] = f[0][j][6] + 0.5 * (f[0][j][2] - f[0][j][4]) + rho[0][j] * u[j] / 6.0 - 0.5 * rho[0][j] * vInlet;
+		}
+
+		//入口的corner处需要特别处理
+		//左下角
+		f[0][2][1] = f[0][2][3]; f[0][2][2] = f[0][2][4]; f[0][2][5] = f[0][2][7];
+		f[0][2][6] = f[0][2][8] = 0.5 * (rho[0][3] - (f[0][2][0] + f[0][2][1] + f[0][2][2] + f[0][2][3] + f[0][2][4] + f[0][2][5] + f[0][2][7]));
+		//左上角
+		f[0][ny - 3][1] = f[0][ny - 3][3]; f[0][ny - 3][4] = f[0][ny - 3][2]; f[0][ny - 3][8] = f[0][ny - 3][6];
+		f[0][ny - 3][5] = f[0][ny - 3][7] = 0.5 * (rho[0][ny - 4] - (f[0][ny - 3][0] + f[0][ny - 3][1] + f[0][ny - 3][2] + f[0][ny - 3][3] + f[0][ny - 3][4] + f[0][ny - 3][6] + f[0][ny - 3][8]));
+
+		*/
+
+		return *this;
+	}
+
+
+	//经过检验，该方法不行，使用第二种诺伊曼边界
+	template <int X, int Y>
 	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::oulet_outlflow_Neumann() {
 
 		for (int i = 1; i <= X; i++) {
@@ -1379,16 +1414,47 @@ namespace distribution_function_template_space {
 		return *this;
 	}
 
+	//诺伊曼出口边界
+	template <int X, int Y>
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::oulet_outlflow_Neumann_2() {
+
+		for (int j = 1; j <= Y; j++) {
+			if (area(X, j) == areatype::outlet || area(X, j) == areatype::FB_outlet) {
+
+				for (int q = 0; q < 9; q++) {
+					if(q==3||q==6||q==7||q==2||q==4||q==0)
+						(*this)(X, j, q) = (*this)(X - 1, j, q);
+				}
+
+			}
+		}
+		
+
+		return *this;
+	}
+
+	//std::vector<double> outlet_f;
 	template <int X, int Y>
 	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::oulet_outlflow_convective() {
+		double U = 0, count = 0;
+		for (int j = 1; j <= Y; j++) {
+			if (area(X, j) == areatype::outlet || area(X, j) == areatype::FB_outlet) {
+				velocity(X - 1, j)(0) = (f(X - 1, j, 1) + f(X - 1, j, 5) + f(X - 1, j, 8) - f(X - 1, j, 3) - f(X - 1, j, 6) - f(X - 1, j, 7)) /
+					(f(X - 1, j, 0) + f(X - 1, j, 1) + f(X - 1, j, 2) + f(X - 1, j, 3) + f(X - 1, j, 4) + f(X - 1, j, 5) + f(X - 1, j, 6) + f(X - 1, j, 7) + f(X - 1, j, 8));
+				U += velocity(X - 1, j)(0);
+				count++;
+			}
+		}
 
-		for (int i = 1; i <= X; i++) {
-			for (int j = 1; j <= Y; j++) {
-				if (area(i, j) == areatype::outlet || area(i, j) == areatype::FB_outlet) {
-					//==========================================================================
+		U = U / count;
 
+		for (int j = 1; j <= Y; j++) {
+			if (area(X, j) == areatype::outlet || area(X, j) == areatype::FB_outlet) {
 
+				for (int q = 0; q < 9; q++) {
+					(*this)(X, j, q) = ((*this)(X, j, q) + U * (*this)(X - 1, j, q))(1 + U);//========-=========-=
 				}
+
 			}
 		}
 
