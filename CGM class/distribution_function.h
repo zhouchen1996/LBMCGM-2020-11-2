@@ -980,7 +980,7 @@ namespace distribution_function_template_space {
 
 		//Solve for the equilibrium distribution function.
 		//distribution_function_template_D2Q9.equilibrium(velocity2D_field,scalar_field);
-		distribution_function_template_D2Q9<X, Y>& equilibrium(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::scalar_field<X, Y>& rho);
+		distribution_function_template_D2Q9<X, Y>& equilibrium(vector2D_field_space::velocity2D_field<X, Y>& velocity, scalar_field_space::density_field<X, Y>& rho);
 		distribution_function_template_D2Q9<X, Y>& equilibrium();
 		double equilibrium(int i, int j, int q);
 
@@ -1009,7 +1009,7 @@ namespace distribution_function_template_space {
 		//"Evaluation of outflow boundary conditions for two-phase lattice Boltzmann equation"(2013)
 		distribution_function_template_D2Q9<X, Y>& oulet_outlflow_convective();
 
-		distribution_function_template_D2Q9<X, Y>& out_file(std::string&);
+		distribution_function_template_D2Q9<X, Y>& out_file(const std::string&);
 
 	protected:
 
@@ -1153,7 +1153,7 @@ namespace distribution_function_template_space {
 	//--1--
 	template <int X, int Y>
 	inline distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::equilibrium(vector2D_field_space::velocity2D_field<X, Y>& velocity,
-		scalar_field_space::scalar_field<X, Y>& rho) {
+		scalar_field_space::density_field<X, Y>& rho) {
 
 		double uu = 0, cu = 0;
 		for (int i = 1; i <= X; i++) {
@@ -1721,7 +1721,7 @@ namespace distribution_function_template_space {
 		//This function is used in the color gradient model to get the total distribution function.
 		distribution_function_CGM_D2Q9<X, Y>& blend(distribution_function_CGM_D2Q9<X, Y>& f_r, distribution_function_CGM_D2Q9<X, Y>& f_b);
 
-		distribution_function_CGM_D2Q9<X, Y>& out_file_CGM(std::string& filename);
+		distribution_function_CGM_D2Q9<X, Y>& out_file_CGM(const std::string& filename);
 	};
 
 	//initialize
@@ -1967,7 +1967,7 @@ namespace distribution_function_template_space {
 	}
 
 	template<int X,int Y>
-	double s(int& i, int& j, area_field<areatype, X, Y>& area) {
+	double s(const int& i,const int& j, area_field<areatype, X, Y>& area) {
 		
 		if (i >= 0 && i <= X + 1 && j >= 0 && j <= Y + 1) {
 			if (area(i, j) == areatype::SB || area(i, j) == areatype::SL)
@@ -1981,18 +1981,18 @@ namespace distribution_function_template_space {
 	}
 
 	template<int X, int Y>
-	double tempx(int& i, int& j, area_field<areatype, X, Y>& area) {
+	double tempx(const int& i,const int& j, area_field<areatype, X, Y>& area) {
 		double temp = 0;
 		for (int x = -2; x <= 2; x++) {
 			for (int y = -2; y <= 2; y++) {
-				temp += ww(x * x + y * y) * s<x,y>(i + x, j + y, area) * x;
+				temp += ww(x * x + y * y) * s<X,Y>(i + x, j + y, area) * x;
 			}
 		}
 		return temp;
 	}
 
 	template<int X, int Y>
-	double tempy(int& i, int& j, area_field<areatype, X, Y>& area) {
+	double tempy(const int& i,const int& j, area_field<areatype, X, Y>& area) {
 		double temp = 0;
 		for (int x = -2; x <= 2; x++) {
 			for (int y = -2; y <= 2; y++) {
@@ -2060,7 +2060,7 @@ namespace distribution_function_template_space {
 
 	//member function of distribution_function_template_D2Q9<X, Y> 
 	template<int X,int Y>
-	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::out_file(std::string& filename){
+	distribution_function_template_D2Q9<X, Y>& distribution_function_template_D2Q9<X, Y>::out_file(const std::string& filename){
 
 		//if (step % interval == 0) {
 		//	f.out_file("result" + to_string(step / interval) + ".vtk");
@@ -2081,7 +2081,7 @@ namespace distribution_function_template_space {
 		vtk_scalar_header(outfile, "area");
 		for (int j = 1; j <= Y; j++) {
 			for (int i = 1; i <= X; i++) {
-				outfile << area(i,j) << std::endl;
+				outfile << (int)area(i,j) << std::endl;
 			}
 		}
 		
@@ -2098,7 +2098,7 @@ namespace distribution_function_template_space {
 
 	//member function of distribution_function_template_D2Q9<X, Y>
 	template<int X, int Y>
-	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::out_file_CGM(std::string& filename) {
+	distribution_function_CGM_D2Q9<X, Y>& distribution_function_CGM_D2Q9<X, Y>::out_file_CGM(const std::string& filename) {
 
 		//if (step % interval == 0) {
 		//	f.out_file("resultCGM" + to_string(step / interval) + ".vtk");
@@ -2119,14 +2119,14 @@ namespace distribution_function_template_space {
 		vtk_scalar_header(outfile, "area");
 		for (int j = 1; j <= Y; j++) {
 			for (int i = 1; i <= X; i++) {
-				outfile << area(i, j) << std::endl;
+				outfile << (int)area(i, j) << std::endl;
 			}
 		}
 
 		vtk_scalar_header(outfile, "fluidfield");
 		for (int j = 1; j <= Y; j++) {
 			for (int i = 1; i <= X; i++) {
-				outfile << fluidcolor(i, j) << std::endl;
+				outfile << (int)fluidcolor(i, j) << std::endl;
 			}
 		}
 
