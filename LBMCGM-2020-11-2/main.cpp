@@ -9,14 +9,14 @@
 
 using namespace std;
 const int nx = 100;
-const int ny = 40;
+const int ny = 30;
 const int Q = 9;
 double N_r[nx][ny][Q]{ 0 };
 double N_b[nx][ny][Q]{ 0 };
 double N[nx][ny][Q]{ 0 };
-double Neq_r[nx][ny][Q]{ 0 };
-double Neq_b[nx][ny][Q]{ 0 };
-double Neq[nx][ny][Q]{ 0 };
+//double Neq_r[nx][ny][Q]{ 0 };
+//double Neq_b[nx][ny][Q]{ 0 };
+//double Neq[nx][ny][Q]{ 0 };
 double rho_r[nx][ny]{ 0 };
 double rho_b[nx][ny]{ 0 };
 double rho[nx][ny]{ 0 };
@@ -28,23 +28,21 @@ double vInlet = 0.0;
 double Phi[nx][ny]{ 0 };//相场
 double F_x[nx][ny]{ 0 };//相场梯度
 double F_y[nx][ny]{ 0 };
-double n[nx][ny][2]{ 0 };//相场梯度的单位向量
-double kappa[nx][ny]{ 0 };//曲率
-double F[nx][ny][2]{ 0 };//外力，这里用来描述表面张力力，也可以加入其它体力
 double cx[9]{ 0,1,0,-1,0,1,-1,-1,1 };
 double cy[9]{ 0,0,1,0,-1,1,1,-1,-1 };
 double w[9] = { 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 };
 double rho_r0 = 1;//初始密度
 double rho_b0 = 1;
 double nu_r = 1.0 / 6.0;//粘滞系数，粘性越大，弛豫率就越大,趋于平衡的速度也就越快,这个也会影响伪电流，两个流体的粘性都变大时，伪电流会减小
+//nu_r固定不变，更改nu_b来获得粘滞比,经过检测nu_b[1.0/6000.0,1000.0/6.0]之间，可满足粘滞系数比为 0.001~1000
 double nu_b = 1.0 / 6.0;
 double contactAngle = 120.0 / 180.0 * 3.141592653;//接触角!!!!!!!!!!!!!!!!!
 double A = 0.01;
 double beta = 0.99;
 double delta2 = 0.05;//根据相场梯度控制界面厚度,目前这个值得取法是根据图像试出来的
 double uu, cu, FF, Fc;
-// S对角矩阵 松弛系数矩阵 s7与s8与BGK中的omega相同 
-double s0 = 1.0, s1 = 1.63, s2 = 1.14, s3 = 1.0, s4 = 1.92, s5 = 1.0, s6 = 1.92, s7, s8;//s7 s8会变化
+// S对角矩阵 松弛系数矩阵 s7与s8与BGK中的omega相同 //可以调整一下的系数来获得稳定
+double s0 = 1.0, s1 = 1.64, s2 = 1.54, s3 = 1.0, s4 = 1.9, s5 = 1.0, s6 = 1.9, s7, s8;//s7 s8会变化
 double S[9] = { s0,s1,s2,s3,s4,s5,s6,s7,s8 };
 // 平衡矩分布数组
 double temp_moment[9]{ 0 };
@@ -54,7 +52,7 @@ double temp_moment_post_collison[9]{ 0 };
 enum areatype { interface, red, blue, contactline, solid };
 areatype area[nx][ny];
 
-int interval = 10;
+int interval = 100;
 
 namespace Region {
 	enum regiontype { F, FB, FL, S, SB, SL, inlet, outlet, FB_inlet, FB_outlet };//一般是FB,FL,SB,SL, inlet, outlet,FB_inlet,FB_outlet 8个组成部分
@@ -666,6 +664,7 @@ void calculate_temp_moment_eq(double& rho, double& u, double& v) {
 	//形参rho对应实参rho[i][j]
 	//形参u对应实参u[i][j]
 	//形参v对应实参v[i][j]
+	//2 4 6
 	temp_moment_eq[0] = rho;
 	temp_moment_eq[1] = -2.0 * rho + 3.0 * rho * (u * u + v * v);
 	temp_moment_eq[2] = -3.0 * rho * (u * u + v * v) + rho;
@@ -711,6 +710,7 @@ void collision_single_phase(
 				//S[7]与S[8]在界面处是变化的
 				for (int k = 0; k < 7; k++) {
 					temp_moment_post_collison[k] = (1 - S[k]) * temp_moment[k] + S[k] * temp_moment_eq[k];
+					//调整其它矩的omega(i,j)来获得计算的稳定==============!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 					//temp_moment_post_collison[k] = (1 - 0.8 * omega(i, j)) * temp_moment[k] + 0.8 * omega(i, j) * temp_moment_eq[k];
 				}
 				temp_moment_post_collison[7] = (1 - omega(i, j)) * temp_moment[7] + omega(i, j) * temp_moment_eq[7];
@@ -811,7 +811,7 @@ int main() {
 
 	double temp = 0;
 	//开始
-	for (int step = 0; step <= 8000; step++) {
+	for (int step = 0; step <= 10000; step++) {
 		if (step % 10 == 0) {
 			temp = 0;
 			cout << "第" << step << "步";
@@ -832,7 +832,7 @@ int main() {
 		collision_single_phase(N, M, InvM, S, temp_moment, temp_moment_post_collison, rho, u, v);
 
 		//调试1开始==================================================
-		debug(1, N_r, N_b, step);
+		//debug(1, N_r, N_b, step);
 		//调试1结束==================================================
 
 		//相场梯度(非边界的相场梯度)
@@ -878,7 +878,7 @@ int main() {
 		wettingBoundary::wetting_boundary(F_x, F_y);
 
 		//调试2开始==================================================
-		debug(2, N_r, N_b, step);
+		//debug(2, N_r, N_b, step);
 		//调试2结束==================================================
 
 		//扰动算子
@@ -895,7 +895,7 @@ int main() {
 		}
 
 		//调试3开始==================================================
-		debug(3, N_r, N_b, step);
+		//debug(3, N_r, N_b, step);
 		//调试3结束==================================================
 
 		//重着色算子
@@ -918,7 +918,7 @@ int main() {
 		}
 
 		//调试4开始==================================================
-		debug(4, N_r, N_b, step);
+		//debug(4, N_r, N_b, step);
 		//调试4结束==================================================
 
 		//流
@@ -926,7 +926,7 @@ int main() {
 		streaming(N_b);
 
 		//调试5开始==================================================
-		debug(5, N_r, N_b, step);
+		//debug(5, N_r, N_b, step);
 		//调试5结束==================================================
 
 		//边界
@@ -940,7 +940,7 @@ int main() {
 		inoutBoundary::ouletNeumann(N_b);
 
 		//调试6开始==================================================
-		debug(6, N_r, N_b, step);
+		//debug(6, N_r, N_b, step);
 		//调试6结束==================================================
 
 		//密度
@@ -975,10 +975,6 @@ int main() {
 			}
 		}
 
-
-		//if (step % interval == 0) {
-		//	out_file("Phi" + to_string(step / interval) + ".vtk", "Phi", "velocity", u, v, Phi);
-		//}
 		for (int i = 0; i < nx; i++) {
 			for (int j = 0; j < ny; j++) {
 				if (Region::region[i][j] == Region::SB || Region::region[i][j] == Region::SL) {
@@ -989,6 +985,7 @@ int main() {
 		if (step % interval == 0) {
 			out_file("new" + to_string(step / interval) + ".vtk", "Phi", "area", "velocity", u, v, Phi, area);
 		}
+
 		//调试7开始==================================================
 		for (int i = 0; i < nx; i++) {
 			for (int j = 0; j < ny; j++) {
