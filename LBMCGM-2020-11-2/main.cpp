@@ -4,17 +4,7 @@
 #include <string>
 #include <fstream>
 #include "MRT.h"
-//根据文献"Lattice Boltzmann simulation of pressure-driven two-phase flows in capillary tube and porous medium"
-//以及huang2014的文章对出入口边界进行调整
-//对于侵入的流体(红色):入口为速度边界，出口为压力为0的边界
-//对于抗侵入的流体(蓝色):入口为压力为0的边界，出口为恒压的边界
-//具体而言:
-//		红色 :	入口 : 速度为 u0
-//				出口 : 压力为 极小值 例如
-//		蓝色 :  入口与出口均为压力极小值
-//修改了sourceTermPrecondition()函数，将不在界面的表面张力力赋值为0
 
-//根据文献"Lattice Boltzmann simulation of pressure-driven two-phase flows in capillary tube and porous medium"
 //从总分布函数的角度设计入口出口边界
 
 using namespace std;
@@ -439,20 +429,17 @@ namespace inoutBoundary {
 		for (int j = 0; j < ny; j++) {
 			if (Region::region[nx - 1][j] == Region::outlet) {
 				for (int q = 0; q < Q; q++) {
-					//if (q == 3 || q == 6 || q == 7)
-						f[nx - 1][j][q] = f[nx - 2][j][q];
+					f[nx - 1][j][q] = f[nx - 2][j][q];
 				}
 			}
 			else if (j == 2) {
 				for (int q = 0; q < Q; q++) {
-					//if (q == 2 || q == 3 || q == 5 || q == 6 || q == 7)
-						f[nx - 1][j][q] = f[nx - 2][j][q];
+					f[nx - 1][j][q] = f[nx - 2][j][q];
 				}
 			}
 			else if (j == ny - 3) {
 				for (int q = 0; q < Q; q++) {
-					//if (q == 3 || q == 4 || q == 6 || q == 7 || q == 8)
-						f[nx - 1][j][q] = f[nx - 2][j][q];
+					f[nx - 1][j][q] = f[nx - 2][j][q];
 				}
 			}
 		}
