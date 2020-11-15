@@ -22,7 +22,7 @@ double rho_b[nx][ny]{ 0 };
 double rho[nx][ny]{ 0 };
 double u[nx][ny]{ 0 };
 double v[nx][ny]{ 0 };
-double uInlet = 0.005;//入口流速
+double uInlet = 0.01;//入口流速
 double uInletDistribution[ny];
 double vInlet = 0.0;
 double Phi[nx][ny]{ 0 };//相场
@@ -35,11 +35,11 @@ double rho_r0 = 1;//初始密度
 double rho_b0 = 1;
 double nu_r = 1.0 / 6.0;//粘滞系数，粘性越大，弛豫率就越大,趋于平衡的速度也就越快,这个也会影响伪电流，两个流体的粘性都变大时，伪电流会减小
 //nu_r固定不变，更改nu_b来获得粘滞比,经过检测nu_b[1.0/6000.0,1000.0/6.0]之间，可满足粘滞系数比为 0.001~1000
-double nu_b = 100.0 / 6.0;
+double nu_b = 1.0 / 6.0;
 double contactAngle = 90.0 / 180.0 * 3.141592653;//接触角!!!!!!!!!!!!!!!!!
 double A = 0.01;
 double beta = 0.999;
-double delta2 = 0.01;//根据相场梯度控制界面厚度,目前这个值得取法是根据图像试出来的0.05
+double delta2 = 0.05;//根据相场梯度控制界面厚度,目前这个值得取法是根据图像试出来的0.05
 double uu, cu, FF, Fc;
 // S对角矩阵 松弛系数矩阵 s7与s8与BGK中的omega相同 //可以调整一下的系数来获得稳定
 double s0 = 1.0, s1 = 1.64, s2 = 1.54, s3 = 1.0, s4 = 1.9, s5 = 1.0, s6 = 1.9, s7, s8;//s7 s8会变化//s4与s6也是重要的参数，用于控制稳定 huang采用的是1.2 liu采用的是1.9
