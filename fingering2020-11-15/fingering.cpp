@@ -31,7 +31,7 @@ const double InvM[9][9] = {
 	{1.0 / 9.0,  1.0 / 18.0, 1.0 / 36.0,-1.0 / 6.0,-1.0 / 12.0,-1.0 / 6.0,-1.0 / 12.0,0.0,1.0 / 4.0},
 	{1.0 / 9.0,  1.0 / 18.0, 1.0 / 36.0,1.0 / 6.0,1.0 / 12.0,-1.0 / 6.0,-1.0 / 12.0,0.0,-1.0 / 4.0} };
 const int nx = 100;
-const int ny = 20;
+const int ny = 50;
 const int Q = 9;
 double N_r[nx][ny][Q]{ 0 };
 double N_b[nx][ny][Q]{ 0 };
@@ -44,9 +44,9 @@ double rho_b[nx][ny]{ 0 };
 double rho[nx][ny]{ 0 };
 double u[nx][ny]{ 0 };
 double v[nx][ny]{ 0 };
-double rhoInlet = 1.02;//入口密度，用于压力入口边界
-double rhoOutlet = 0.98;//出口密度，用于压力出口边界
-double uInlet = 0.01;//入口流速
+double rhoInlet = 1.01;//入口密度，用于压力入口边界
+double rhoOutlet = 0.99;//出口密度，用于压力出口边界
+double uInlet = 0.05;//入口流速
 double uInletDistribution[ny];
 double vInlet = 0.0;
 double Phi[nx][ny]{ 0 };//相场
@@ -57,12 +57,12 @@ double cy[9]{ 0,0,1,0,-1,1,1,-1,-1 };
 double w[9] = { 4.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 9.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0,1.0 / 36.0 };
 double rho_r0 = 1;//初始密度
 double rho_b0 = 1;
-double nu_r = 1.0 / 6.0;//粘滞系数，粘性越大，弛豫率就越大,趋于平衡的速度也就越快,这个也会影响伪电流，两个流体的粘性都变大时，伪电流会减小
+double nu_r = 0.4;//粘滞系数，粘性越大，弛豫率就越大,趋于平衡的速度也就越快,这个也会影响伪电流，两个流体的粘性都变大时，伪电流会减小
 //nu_r固定不变，更改nu_b来获得粘滞比,经过检测nu_b[1.0/6000.0,1000.0/6.0]之间，可满足粘滞系数比为 0.001~1000
-double nu_b = 1.0 / 6.0;
-double contactAngle = 90.0 / 180.0 * 3.141592653;//接触角!!!!!!!!!!!!!!!!!
+double nu_b = 0.4;
+double contactAngle = 135.0 / 180.0 * 3.141592653;//接触角!!!!!!!!!!!!!!!!!
 double A = 0.01;
-double beta = 0.999;
+double beta = 1.0;
 double delta2 = 0.05;//根据相场梯度控制界面厚度,目前这个值得取法是根据图像试出来的0.05
 double uu, cu, FF, Fc;
 // S对角矩阵 松弛系数矩阵 s7与s8与BGK中的omega相同 //可以调整一下的系数来获得稳定
@@ -76,7 +76,7 @@ double temp_moment_post_collison[9]{ 0 };
 enum areatype { interface, red, blue, contactline, solid };
 areatype area[nx][ny];
 
-int interval = 100;
+int interval = 20;
 
 namespace Region {
 	enum regiontype { F, FB, FL, S, SB, SL, inlet, outlet, FB_inlet, FB_outlet };//一般是FB,FL,SB,SL, inlet, outlet,FB_inlet,FB_outlet 8个组成部分
@@ -159,12 +159,37 @@ namespace Region {
 
 	//调用Region::setProcess();
 
+	//设计2*4个圆柱半径为6
+	const int x = 4;
+	const int y = 2;
+	double r = 6;
+	double length;
+	long long site_x[x][y];
+	long long site_y[x][y];
 	void setS() {
+
+		for (int i = 0; i < x; i++) {
+			for (int j = 0; j < y; j++) {
+				site_x[i][j] = nx / double(x + 1) * (double(i) + 1.0);
+				site_y[i][j] = ny / double(y + 1) * (double(j) + 1.0);
+			}
+		}		
+
 		for (int i = 0; i < nx; i++) {
 			for (int j = 0; j < ny; j++) {
 				if (j == 0 || j == 1 || j == ny - 1 || j == ny - 2) {
 					region[i][j] = S;
 				}
+
+				for (int ii = 0; ii < x; ii++) {
+					for (int jj = 0; jj < y; jj++) {
+						length = sqrt(pow(i - site_x[ii][jj], 2) + pow(j - site_y[ii][jj], 2));
+						if (length < r) {
+							region[i][j] = S;
+						}
+					}
+				}
+
 			}
 		}
 		return;
@@ -577,7 +602,7 @@ double omega(int& i, int& j) {
 }
 
 double cosphi(int& k, double& Fc, double& FF) {
-	if (FF > delta2) {
+	if (FF > 0) {
 		if (k == 0) {
 			return 0;
 		}
@@ -595,7 +620,8 @@ double cosphi(int& k, double& Fc, double& FF) {
 }
 
 double cosphi_e(int& k, double& Fc, double& FF) {
-	if (FF > delta2) {
+	if (FF > 0.0) {
+		//这一步对于质量的守恒至关重要,一定要是整个流体区域内做重新着色
 		if (k == 0) {
 			return 0;
 		}
@@ -868,6 +894,7 @@ int main() {
 	Region::setProcess();//设置region
 	Region::cal_ns();//计算固体边界的单位法向量，指向固体
 	inoutBoundary::caculate_uInletDistribution();//计算入口的速度分布
+
 	//初始化
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
@@ -887,7 +914,7 @@ int main() {
 
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
-			if (area[i][j] == blue && i < 10) {
+			if (area[i][j] == blue && i < 5) {
 				area[i][j] = red;
 			}
 		}
@@ -929,7 +956,7 @@ int main() {
 
 	double temp = 0;
 	//开始
-	for (int step = 0; step <= 10000; step++) {
+	for (int step = 0; step <= 4000; step++) {
 		if (step % 10 == 0) {
 			temp = 0;
 			cout << "第" << step << "步";
@@ -1053,10 +1080,11 @@ int main() {
 
 		//使用总分布函数来计算入口出口边界
 
-		inoutBoundary::inletPressure();
-		inoutBoundary::outletPressure();
-		//inoutBoundary::ouletNeumann(N_r);
-		//inoutBoundary::ouletNeumann(N_b);
+		inoutBoundary::inletVelocity();
+		//inoutBoundary::inletPressure();
+		//inoutBoundary::outletPressure();
+		inoutBoundary::ouletNeumann(N_r);
+		inoutBoundary::ouletNeumann(N_b);
 
 		//调试6开始==================================================
 		//debug(6, N_r, N_b, step);
@@ -1102,7 +1130,7 @@ int main() {
 			}
 		}
 		if (step % interval == 0) {
-			out_file("new" + to_string(step / interval) + ".vtk", "Phi", "area", "density", "velocity", u, v, Phi, area, rho);
+			out_file("new" + to_string(step / interval) + ".vtk", "Phi", "area", "density", "velocity", u, v, Phi, area, rho_r);
 		}
 
 		//调试7开始==================================================
